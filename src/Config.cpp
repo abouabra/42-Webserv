@@ -240,7 +240,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		else if (key == "max_body_size:")
 		{
 			// check duplicate
-			if (new_serve.max_body_size != 1000000)
+			if (new_serve.max_body_size != DEFAULT_MAX_BODY_SIZE)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated max_body_size"));
@@ -831,7 +831,7 @@ Location parse_server_location(std::stringstream &ss)
 		else if (key == "upload_max_size:")
 		{
 			// check duplicate
-			if (location.upload_max_size != 1000000)
+			if (location.upload_max_size != DEFAULT_UPLOAD_MAX_SIZE)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated upload_max_size"));
@@ -911,7 +911,7 @@ ServerConfig::ServerConfig()
 	// setting up default values
 	host = -1;
 	port = 0;
-	max_body_size = 1000000;
+	max_body_size = DEFAULT_MAX_BODY_SIZE;
 }
 
 ServerConfig::~ServerConfig()
@@ -951,7 +951,7 @@ Location::Location()
 	// setting up default values
 	directory_listing = false;
 	upload_enabled = false;
-	upload_max_size = 1000000; // 1MB
+	upload_max_size = DEFAULT_UPLOAD_MAX_SIZE;
 }
 
 Location::~Location()

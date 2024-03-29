@@ -7,6 +7,9 @@
 #include <fstream>
 #include "Utils.hpp"
 
+#define DEFAULT_MAX_BODY_SIZE 1000000
+#define DEFAULT_UPLOAD_MAX_SIZE 5000000
+
 
 class Location {
 public:
