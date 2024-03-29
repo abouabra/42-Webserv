@@ -64,7 +64,6 @@ std::string Config::read_config(std::string &config_file)
 	// if not we throw an exception
 	if(!file.is_open())
 	{
-		// log("Error: Could not open config file", ERROR);
 		throw std::runtime_error("Could not open config file");
 	}
 
@@ -764,11 +763,28 @@ Location parse_server_location(std::stringstream &ss)
 		}
 		else if (key == "redirect_url:")
 		{
-			location.redirect_url = value;
-			// check_multiple(value, ss_2);
+			// check duplicate
+			if (location.redirect_url.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated redirect_url"));
+			}
+
+			// here we check if the redirect url is a valid path
+			assign_if_valid(key, value, location.redirect_url, is_location_path_valid);
+
 		}
 		else if (key == "directory_listing:")
 		{
+			// check duplicate
+			if (location.directory_listing != false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated directory_listing"));
+			}
+
+			// here we check if the directory listing is valid
+			// then we store the value
 			if (value == "false")
 				location.directory_listing = false;
 			else if (value == "true")
@@ -781,6 +797,15 @@ Location parse_server_location(std::stringstream &ss)
 		}
 		else if (key == "upload_enabled:")
 		{
+			// check duplicate
+			if (location.upload_enabled != false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated upload_enabled"));
+			}
+
+			// here we check if the upload enabled is valid
+			// then we store the value
 			if (value == "false")
 				location.upload_enabled = false;
 			else if (value == "true")
@@ -793,11 +818,30 @@ Location parse_server_location(std::stringstream &ss)
 		}
 		else if (key == "upload_directory:")
 		{
-			location.upload_directory = value;
+			// check duplicate
+			if (location.upload_directory.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated upload_directory"));
+			}
+
+			// here we check if the upload directory is valid
+			assign_if_valid(key, value, location.upload_directory, is_root_valid);
 		}
 		else if (key == "upload_max_size:")
 		{
-			location.upload_max_size = ft_atoi(value);
+			// check duplicate
+			if (location.upload_max_size != 1000000)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated upload_max_size"));
+			}
+
+			// here we check if the upload max size is valid
+			// then we store the value
+			std::string result;
+			assign_if_valid(key, value, result, is_max_body_size_valid);
+			location.upload_max_size = ft_atoi(result);
 		}
 	}
 	return location;
