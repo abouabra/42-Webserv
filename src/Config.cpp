@@ -128,7 +128,6 @@ void Config::parse_config(std::string &config_file)
 		// it has to be the first keyword for a server block
 		if(line != "server:")
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid server block"));
 		}
@@ -170,7 +169,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		int tabs = count_c(line, '\t');
 		if (tabs != 1)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid server config tabs"));
 		}
@@ -185,7 +183,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		// if there is we throw an exception
 		if (ss_2.peek() != EOF)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid syntax"));
 		}
@@ -200,14 +197,13 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// check duplicate
 			if (new_serve.host != -1)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated host"));
 			}
 
 			// here we check if the host is valid
 			std::string result;
-			assign_if_valid(key, value, result, is_host_valid, ss);
+			assign_if_valid(key, value, result, is_host_valid);
 			new_serve.host = ip_to_int(result);
 		}
 
@@ -217,14 +213,13 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// check duplicate
 			if (new_serve.port != 0)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated port"));
 			}
 
 			// here we check if the port is valid
 			std::string result;
-			assign_if_valid(key, value, result, is_port_valid, ss);
+			assign_if_valid(key, value, result, is_port_valid);
 			new_serve.port = ft_atoi(result);
 		}
 
@@ -234,13 +229,12 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// check duplicate
 			if (new_serve.root.empty() == false)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated root"));
 			}
 
 			// here we check if the root is valid
-			assign_if_valid(key, value, new_serve.root, is_root_valid, ss);
+			assign_if_valid(key, value, new_serve.root, is_root_valid);
 		}
 
 		// here we parse the max body size keyword
@@ -249,14 +243,13 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// check duplicate
 			if (new_serve.max_body_size != 1000000)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated max_body_size"));
 			}
 
 			// here we check if the max body size is valid
 			std::string result;
-			assign_if_valid(key, value, result, is_max_body_size_valid, ss);
+			assign_if_valid(key, value, result, is_max_body_size_valid);
 			new_serve.max_body_size = ft_atoi(result);
 		}
 
@@ -266,13 +259,12 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// check duplicate
 			if (new_serve.index.empty() == false)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated index"));
 			}
 
 			// here we check if the index is valid
-			assign_if_valid(key, value, new_serve.index, is_index_valid, ss);
+			assign_if_valid(key, value, new_serve.index, is_index_valid);
 		}
 
 		// here we parse the error pages keyword and its sub keys
@@ -294,7 +286,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// here we check if the location path is valid
 			if (is_location_path_valid(value) == false)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid location path"));
 			}
@@ -305,7 +296,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			new_serve.locations.push_back(location);
 		}
 		else {
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw std::runtime_error("Invalid config syntax");
 		}
@@ -313,7 +303,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 	return new_serve;
 }
 
-void assign_if_valid(std::string &key, std::string &value, std::string &assign_to, bool (*is_valid)(std::string &), std::stringstream &ss)
+void assign_if_valid(std::string &key, std::string &value, std::string &assign_to, bool (*is_valid)(std::string &))
 {
 	// this function checks if the value is valid
 	// using the is_valid function pointer
@@ -324,36 +314,8 @@ void assign_if_valid(std::string &key, std::string &value, std::string &assign_t
 		assign_to = value;
 	else
 	{
-		print_error_at_line_x(ss);
 		std::cout << key << " " << value << std::endl;
 		throw(std::runtime_error("Invalid " + key));
-	}
-}
-
-void print_error_at_line_x(std::stringstream &ss)
-{
-	//here we print the line number where the error occured
-
-	// we store the current position of the stringstream
-	std::streampos pos = ss.tellg();
-
-	// we move the stringstream to the start
-	ss.seekg(0, std::ios::beg);
-
-	// we loop through the lines of the stringstream
-	// and count the lines
-	int line_number = 0;
-	std::string line;
-	while (std::getline(ss, line))
-	{
-		line_number++;
-
-		// if we reached the position we print the line number
-		if (ss.tellg() == pos)
-		{
-			std::cout << "Error During Parsing at Line: " << line_number << std::endl;
-			break;
-		}
 	}
 }
 
@@ -488,7 +450,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// here we check if the key is a valid number
 		if (key.empty())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page code"));
 		}
@@ -498,7 +459,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 			key = key.substr(0, key.size() - 1);
 		else
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page code"));
 		}
@@ -506,7 +466,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// here we check if the key is a valid key
 		if (key.find_first_not_of("0123456789") != std::string::npos)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page code"));
 		}
@@ -515,7 +474,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// here we check if the code is a valid code
 		if (code < 100 || code > 599)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page code"));
 		}
@@ -523,7 +481,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// here we check if there is a value
 		if (value.empty())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page path"));
 		}
@@ -531,7 +488,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// here we check if the value is a valid path
 		if (value.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page path"));
 		}
@@ -539,7 +495,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// we check if there still data on the line
 		if (ss_2.peek() != EOF)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid config syntax"));
 		}
@@ -548,7 +503,6 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// if there are we throw an exception
 		if (error_pages.find(code) != error_pages.end())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("duplicated error page code"));
 		}
@@ -586,7 +540,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the key is empty
 		if (key.empty())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi key"));
 		}
@@ -594,7 +547,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the key (extension) is a valid key
 		if (key.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.:") != std::string::npos)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi key"));
 		}
@@ -604,7 +556,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 			key = key.substr(0, key.size() - 1);
 		else
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page code"));
 		}
@@ -612,7 +563,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the key is starting with a dot
 		if (key[0] != '.')
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi key"));
 		}
@@ -620,7 +570,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the value is empty
 		if (value.empty())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi value"));
 		}
@@ -628,7 +577,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the value is a valid path
 		if (value.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi value"));
 		}
@@ -636,7 +584,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if the path starts with a /
 		if (value[0] != '/')
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi value"));
 		}
@@ -644,7 +591,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// we check if there still data on the line
 		if (ss_2.peek() != EOF)
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid config syntax"));
 		}
@@ -653,7 +599,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// if there are we throw an exception
 		if (cgi.find(key) != cgi.end())
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("duplicated cgi key"));
 		}
@@ -758,7 +703,6 @@ Location parse_server_location(std::stringstream &ss)
 		// we have to check if the key is not methods because it can have multiple values
 		if (ss_2.peek() != EOF && key != "methods:")
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid config syntax"));
 		}
@@ -767,14 +711,14 @@ Location parse_server_location(std::stringstream &ss)
 		// it has the same check as the server root
 		if (key == "root:")
 		{
-			assign_if_valid(key, value, location.root, is_root_valid, ss);
+			assign_if_valid(key, value, location.root, is_root_valid);
 		}
 
 		// here we check the location index keyword
 		// it has the same check as the server index
 		else if (key == "index:")
 		{
-			assign_if_valid(key, value, location.index, is_index_valid, ss);
+			assign_if_valid(key, value, location.index, is_index_valid);
 		}
 
 		//here we check the location methods keyword
@@ -785,19 +729,17 @@ Location parse_server_location(std::stringstream &ss)
 				location.methods.push_back(value);
 			else
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method"));
 			}
 
 			// then we parse the rest of the methods
-			parse_location_methods(ss, ss_2, line, location.methods);
+			parse_location_methods(ss_2, line, location.methods);
 
 			// check if the total number of pipes matches the number of methods on the vector -1
 			size_t total_pipe_count = count_c(line, '|');
 			if(total_pipe_count != location.methods.size() - 1)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method"));
 			}
@@ -809,7 +751,6 @@ Location parse_server_location(std::stringstream &ss)
 			std::sort(location.methods.begin(), location.methods.end());
 			if (std::adjacent_find(location.methods.begin(), location.methods.end()) != location.methods.end())
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method"));
 			}
@@ -817,7 +758,6 @@ Location parse_server_location(std::stringstream &ss)
 			// Check if the last value read was a separator
 			if (!ss_2.eof() && value != "|")
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method separator"));
 			}
@@ -835,7 +775,6 @@ Location parse_server_location(std::stringstream &ss)
 				location.directory_listing = true;
 			else
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config directory_listing"));
 			}
@@ -848,7 +787,6 @@ Location parse_server_location(std::stringstream &ss)
 				location.upload_enabled = true;
 			else
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config upload_enabled"));
 			}
@@ -882,7 +820,7 @@ bool is_valid_method(std::string &method)
 
 
 
-void parse_location_methods(std::stringstream &ss, std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
+void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
 {
 	size_t passed_pipes = 0;
 	std::string value;
@@ -898,7 +836,6 @@ void parse_location_methods(std::stringstream &ss, std::stringstream &ss_2, std:
 			// Check if there is a method before the pipe
 			if (methods.size() != passed_pipes)
 			{
-				print_error_at_line_x(ss);
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method"));
 			}
@@ -910,7 +847,6 @@ void parse_location_methods(std::stringstream &ss, std::stringstream &ss_2, std:
 		// Check if there is methods are valid
 		else if (!is_valid_method(value))
 		{
-			print_error_at_line_x(ss);
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid config method"));
 		}

@@ -2,6 +2,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <string>
 #include <vector>
 #include <fstream>
 #include "Utils.hpp"
@@ -60,11 +61,12 @@ public:
 	void clean_file(std::string& config);
 	void parse_config(std::string &config_file);
 	void print_config();
+
+	
 };
 
 ServerConfig parse_server_config(std::stringstream &ss);
-void assign_if_valid(std::string &key, std::string &value, std::string &assign_to, bool (*is_valid)(std::string &), std::stringstream &ss);
-void print_error_at_line_x(std::stringstream &ss);
+void assign_if_valid(std::string &key, std::string &value, std::string &assign_to, bool (*is_valid)(std::string &));
 
 bool is_host_valid(std::string &host);
 bool is_port_valid(std::string &port);
@@ -77,6 +79,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss);
 
 Location parse_server_location(std::stringstream &ss);
 bool is_location_path_valid(std::string &path);
-void parse_location_methods(std::stringstream &ss, std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods);
+void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods);
 bool is_valid_method(std::string &method);
 
