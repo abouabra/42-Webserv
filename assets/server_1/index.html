@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Server 1</title>
+    <link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="container">
+			<div class="left-side">
+				<h1>Server 1</h1>
+				<h2>The index page of Server 1</h2>
+				<div class="button-container">
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/site_1'">
+						Go to Site 1
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/site_2'">
+						Go to Site 2
+					</button>
+				</div>
+				<div>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/redirect'">
+						Redirect to Server 2
+					</button>
+				</div>
+				<div>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/list'">
+						Directory Listing
+					</button>
+				</div>
+				<div class="test-buttons">
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/404'">
+						Test 404
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/405'">
+						Test 405
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/413'">
+						Test 413
+					</button>
+				</div>
+			</div>
+			<div class="right-side"></div>
+		</div>
+	</body>
+</html>

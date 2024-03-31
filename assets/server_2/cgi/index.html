@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>CGI Page</title>
+    <link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="container">
+			<div class="left-side"></div>
+			<div class="right-side">
+				<h1>CGI Page</h1>
+				<h2>The CGI Page of Server 2</h2>
+				<div class="button-container">
+					<form id="cgi_form" class="form" action="/cgi-bin/cgi.py" method="post">
+						<select class="input" name="method">
+							<option value="GET">GET</option>
+							<option value="POST">POST</option>
+						</select>
+						<select class="input" name="language">
+							<option value="php">PHP</option>
+							<option value="python">Python</option>
+							<option value="bash">Bash</option>
+						</select>
+						<select class="input" name="enctype">
+							<option value="text/plain">Text/Plain</option>
+							<option value="application/x-www-form-urlencoded">Application/x-www-form-urlencoded</option>
+							<option value="multipart/form-data">Multipart/Form-Data</option>
+						</select>
+						<input class="input" type="text" name="fname" placeholder="Enter your First Name" />
+						<input class="input" type="text" name="lname" placeholder="Enter your Last Name" />
+						<input class="input" type="text" name="msg" placeholder="Enter your Message" />
+						<input class="input" type="submit" value="Submit" />
+					</form>
+				</div>
+			</div>
+		</div>
+		<script src="script.js"></script>
+	</body>
+</html>

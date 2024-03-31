@@ -17,8 +17,6 @@ enum log_level
 
 void log(std::string message, int level);
 
-void guard(int status, std::string message);
-
 /*
 	this function will convert an integer to a string
 */

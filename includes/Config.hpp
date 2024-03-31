@@ -82,6 +82,8 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss);
 
 Location parse_server_location(std::stringstream &ss);
 bool is_location_path_valid(std::string &path);
+bool is_redirect_url_valid(std::string &path);
+bool is_upload_directory_valid(std::string &upload_directory);
 void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods);
 bool is_valid_method(std::string &method);
 

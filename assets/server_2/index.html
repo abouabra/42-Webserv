@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Server 2</title>
+    <link rel="stylesheet" href="style.css" />
+	</head>
+	<body>
+		<div class="container">
+			<div class="left-side"></div>
+			<div class="right-side">
+				<h1>Server 2</h1>
+				<h2>The index page of Server 2</h2>
+				<div class="button-container">
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/cgi'">
+						CGI Page
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/#'">
+						CGI List
+					</button>
+				</div>
+				<div>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/redirect'">
+						Redirect to Server 1
+					</button>
+				</div>
+				<div class="test-buttons">
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/upload'">
+						Upload Page
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/upload/upload_dir/'">
+						Upload Directory
+					</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

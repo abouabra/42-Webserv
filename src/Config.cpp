@@ -628,6 +628,21 @@ bool is_location_path_valid(std::string &path)
 	return true;
 }
 
+bool is_redirect_url_valid(std::string &path)
+{
+	// here we check if the path is valid
+	// if the path is empty we return false
+	if (path.empty())
+		return false;
+
+	// here we check if the path contains any invalid characters
+	// if it does we return false
+	if (path.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.:") != std::string::npos)
+		return false;
+
+	return true;
+}
+
 void Config::print_config()
 {
 	// here we loop through the servers and print their values
@@ -760,6 +775,12 @@ Location parse_server_location(std::stringstream &ss)
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method separator"));
 			}
+
+			// if there are no methods we add the GET method
+			if(location.methods.empty())
+			{
+				location.methods.push_back("GET");
+			}
 		}
 		else if (key == "redirect_url:")
 		{
@@ -771,7 +792,7 @@ Location parse_server_location(std::stringstream &ss)
 			}
 
 			// here we check if the redirect url is a valid path
-			assign_if_valid(key, value, location.redirect_url, is_location_path_valid);
+			assign_if_valid(key, value, location.redirect_url, is_redirect_url_valid);
 
 		}
 		else if (key == "directory_listing:")
@@ -826,7 +847,7 @@ Location parse_server_location(std::stringstream &ss)
 			}
 
 			// here we check if the upload directory is valid
-			assign_if_valid(key, value, location.upload_directory, is_root_valid);
+			assign_if_valid(key, value, location.upload_directory, is_upload_directory_valid);
 		}
 		else if (key == "upload_max_size:")
 		{
@@ -862,6 +883,20 @@ bool is_valid_method(std::string &method)
 	return true;
 }
 
+bool is_upload_directory_valid(std::string &upload_directory)
+{
+	// here we check if the upload directory is valid
+	// if the upload directory is empty we return false
+	if (upload_directory.empty())
+		return false;
+
+	// here we check if the path contains any invalid characters
+	// if it does we return false
+	if (upload_directory.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
+		return false;
+
+	return true;
+}
 
 
 void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
