@@ -139,6 +139,36 @@ void Config::parse_config(std::string &config_file)
 			servers.push_back(server);
 		}
 	}
+
+	// loop through the config and check for missing values
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		// here we check if the server has all the required values
+		if (servers[i].host == -1)
+		{
+			// here we check if the host is missing
+			std::cout << "Server #" << i << std::endl;
+			throw(std::runtime_error("Missing host"));
+		}
+		if (servers[i].port == 0)
+		{
+			// here we check if the port is missing
+			std::cout << "Server #" << i << std::endl;
+			throw(std::runtime_error("Missing port"));
+		}
+		if (servers[i].root.empty())
+		{
+			// here we check if the root is missing
+			std::cout << "Server #" << i << std::endl;
+			throw(std::runtime_error("Missing root"));
+		}
+		if (servers[i].index.empty())
+		{
+			// here we check if the index is missing
+			std::cout << "Server #" << i << std::endl;
+			throw(std::runtime_error("Missing index"));
+		}
+	}
 }
 
 
