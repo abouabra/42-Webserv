@@ -7,15 +7,19 @@
 #include <netinet/in.h>
 #include <ctime>
 
-enum log_level
+enum log_colors
 {
-	INFO,
-	WARNING,
-	ERROR,
+	RED,
+	GREEN,
+	BLUE,
+	YELLOW,
+	MAGENTA,
+	CYAN,
+	WHITE,
 	RESET
 };
 
-void log(std::string message, int level);
+void log(std::string message, int color);
 
 /*
 	this function will convert an integer to a string
@@ -46,3 +50,5 @@ int ip_to_int(std::string &host);
 	this function will convert a ip from an integer to a string
 */
 std::string int_to_ip(int host);
+
+void print_ascii_header();

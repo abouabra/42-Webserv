@@ -78,10 +78,7 @@ void Server::init() {
 
 
 		// we log that the server has started
-		log("Server started on " + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), INFO);
-
-		// we log the root directory of the server
-		log("Root directory: " + this->config.servers[i].root, INFO);
+		log("Server started on: " + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), WHITE);
 	}
 
 	server_loop();
@@ -159,7 +156,7 @@ void Server::bind_server_address(int socket_fd, ServerConfig server)
 	struct sockaddr_in server_address;
 
 	// we set the server address to 0 using memset to clear any garbage data
-	memset(&server_address, 0, sizeof(server_address));
+	std::memset(&server_address, 0, sizeof(server_address));
 
 	// we set the address family to AF_INET (IPv4)
 	server_address.sin_family = AF_INET;
@@ -279,8 +276,9 @@ void Server::accept_connection(int socket_fd, int index)
 	}
 
 	// we log that a connection has been accepted
-	log("Accepted connection on socket " + itoa(client_socket_fd) + " from " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + ":" + itoa(ntohs(client_address.sin_port)), INFO);
-
+	// log("Accepted connection on socket " + itoa(client_socket_fd) + " from " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + ":" + itoa(ntohs(client_address.sin_port)), GREEN);
+	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
+	
 	// we set the client socket to non-blocking
 	set_socket_to_non_blocking(client_socket_fd);
 
@@ -311,7 +309,7 @@ int Server::read_from_client(int socket_fd, int index)
 	char buffer[BUFFER_SIZE];
 
 	// we clear the buffer using memset
-	memset(buffer, 0, BUFFER_SIZE);
+	std::memset(buffer, 0, BUFFER_SIZE);
 
 	// we read the data using recv with the following parameters:
 	// socket_fd: the socket file descriptor
@@ -324,7 +322,7 @@ int Server::read_from_client(int socket_fd, int index)
 	// so we log the error then we close the connection and return -1
 	if (bytes_read < 0)
 	{
-		log("Failed to read from socket " + itoa(socket_fd), ERROR);
+		log("Failed to read from socket " + itoa(socket_fd), RED);
 		close_connection(socket_fd, index);
 		return -1;
 	}
@@ -333,7 +331,7 @@ int Server::read_from_client(int socket_fd, int index)
 	// so we log that the connection has been closed then we close the connection and return -1
 	if (bytes_read == 0)
 	{
-		log("Connection on socket " + itoa(socket_fd) + " closed by client", INFO);
+		log("Connection On Socket " + itoa(socket_fd) + " Closed By Client", GREEN);
 		close_connection(socket_fd, index);
 		return -1;
 	}
@@ -346,9 +344,8 @@ int Server::read_from_client(int socket_fd, int index)
 	if (bytes_read < BUFFER_SIZE)
 	{
 		// we process the request
-		// this function will parse the request and generate a response
-		// std::cout << this->clients[index].request << std::endl;
-		this->clients[index].process_request();
+		// this function will parse and process the request then generate a response
+		this->clients[index].handle_request();
 
 		// we add the socket to the writes fd_set
 		FD_SET(socket_fd, &this->writes);
@@ -397,7 +394,7 @@ int Server::write_to_client(int socket_fd, int index)
 	// so we log the error then we close the connection and return -1
 	if (bytes_sent < 0)
 	{
-		log("Failed to write to socket " + itoa(socket_fd), ERROR);
+		log("Failed to write to socket " + itoa(socket_fd), RED);
 		close_connection(socket_fd, index);
 		return -1;
 	}
@@ -439,7 +436,7 @@ int Server::check_for_timeout(Client client, int index)
 	if (diff >= TIMEOUT)
 	{
 		// we log that the connection has timed out
-		log("Connection on socket " + itoa(client.socket_fd) + " timed out", INFO);
+		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out", GREEN);
 
 		// we close the connection
 		close_connection(client.socket_fd, index);
@@ -456,9 +453,6 @@ int Server::check_for_timeout(Client client, int index)
 void Server::close_connection(int socket_fd, int index)
 {
 	// here we close the connection
-
-	// we log that the connection has been closed
-	log("Connection on socket " + itoa(socket_fd) + " closed", INFO);
 
 	//remove the socket from the master and writes fd_set
 	FD_CLR(socket_fd, &this->master);

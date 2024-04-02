@@ -10,6 +10,7 @@
 	then it will create the Server object and run the server
 */
 
+
 int main(int ac, char **av)
 {
 	std::string file_name;
@@ -33,6 +34,7 @@ int main(int ac, char **av)
 	// if an exception is thrown, print the error and return 1
 	try
 	{
+		print_ascii_header();
 		Config config(file_name);
 
 		Server server(config);
@@ -40,8 +42,9 @@ int main(int ac, char **av)
 	}
 	catch(const std::exception& e)
 	{
-		std::cerr << "Error: " << e.what() << std::endl;
+		std::cerr <<  "\033[1;31m" << "Error: " << e.what() << "\033[0m" << std::endl;
 		return 1;
 	}
 	return 0;
 }
+

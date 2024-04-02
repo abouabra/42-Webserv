@@ -50,7 +50,7 @@ Config::Config(std::string file_name)
 	// here we parse and checks the config file and store the values in the Config object
 	parse_config(config_file);
 
-	log("Config file: " + file_name, INFO);
+	log("Config file: " + file_name, WHITE);
 
 	// // here we print the config file
 	// print_config();

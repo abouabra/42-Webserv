@@ -1,6 +1,7 @@
 #include "../includes/Utils.hpp"
+#include <iostream>
 
-void log(std::string message, int level)
+void log(std::string message, int color)
 {
 	time_t current;
 	char buffer[100];
@@ -12,12 +13,16 @@ void log(std::string message, int level)
 
 	std::map<int, std::string> log_colors;
 
-	log_colors[INFO] = "\033[1;32m";
-	log_colors[WARNING] = "\033[1;33m";
-	log_colors[ERROR] = "\033[1;31m";
-	log_colors[RESET] = "\033[0m";
+	log_colors[RED] = "\033[1;31m";	// red
+	log_colors[GREEN] = "\033[1;32m"; // green
+	log_colors[YELLOW] = "\033[1;33m"; // yellow
+	log_colors[BLUE] = "\033[1;34m";	// blue
+	log_colors[MAGENTA] = "\033[1;35m"; // magenta
+	log_colors[CYAN] = "\033[1;36m"; // cyan
+	log_colors[WHITE] = "\033[1;37m"; // white
+	log_colors[RESET] = "\033[0m"; // reset
 
-	std::cout << log_colors[level] <<  buffer << " " << message << log_colors[RESET] <<std::endl;
+	std::cout << log_colors[color] <<  buffer << " " << message << log_colors[RESET] <<std::endl;
 }
 
 
@@ -107,4 +112,29 @@ std::string int_to_ip(int host)
 		host = host >> 8;
 	}
 	return ip;
+}
+
+
+
+void print_ascii_header()
+{
+	// WEBSERV in ASCII art
+	std::cout << "\033[1;32m"; // green color
+	std::cout << "\033[1;34m"; // blinking text
+	std::cout << "####################################################################################" << std::endl;
+	std::cout << "#                                                                                  #" << std::endl;
+	std::cout << "#     /$$      /$$           /$$                                                   #" << std::endl;
+	std::cout << "#    | $$  /$ | $$          | $$                                                   #" << std::endl;
+	std::cout << "#    | $$ /$$$| $$  /$$$$$$ | $$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$  /$$    /$$    #" << std::endl;
+	std::cout << "#    | $$/$$ $$ $$ /$$__  $$| $$__  $$ /$$_____/ /$$__  $$ /$$__  $$|  $$  /$$/    #" << std::endl;
+	std::cout << "#    | $$$$_  $$$$| $$$$$$$$| $$  \\ $$|  $$$$$$ | $$$$$$$$| $$  \\__/ \\  $$/$$/     #" << std::endl;
+	std::cout << "#    | $$$/ \\  $$$| $$_____/| $$  | $$ \\____  $$| $$_____/| $$        \\  $$$/      #" << std::endl;
+	std::cout << "#    | $$/   \\  $$|  $$$$$$$| $$$$$$$/ /$$$$$$$/|  $$$$$$$| $$         \\  $/       #" << std::endl;
+	std::cout << "#    |__/     \\__/ \\_______/|_______/ |_______/  \\_______/|__/          \\_/        #" << std::endl;
+	std::cout << "#                                                                                  #" << std::endl;
+	std::cout << "#                           ##  by abouabra and mbaanni  ##                        #" << std::endl;
+	std::cout << "#                                                                                  #" << std::endl;
+	std::cout << "####################################################################################" << std::endl;
+	std::cout << "\033[0m";
+	std::cout << std::endl;																			
 }
