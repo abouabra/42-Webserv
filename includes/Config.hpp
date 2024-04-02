@@ -49,11 +49,11 @@ public:
 
 class Config {
 private:
-	Config();
 	std::string config_file;
 
 public:
 	~Config();
+	Config();
 	Config(std::string file_name);
 	Config(Config const &src);
 	Config &operator=(Config const &obj);
