@@ -1,6 +1,7 @@
 #pragma once
 #include "Config.hpp"
 #include <iostream>
+#include <map>
 #include <string>
 
 class Client {
@@ -35,22 +36,23 @@ public:
 
     // Response Parameters
     int response_status_code;
-    std::string response_reason_phrase;
-    std::string response_content_type;
     std::string response_connection;
+    std::string response_content_type;
     std::string response_body;
     std::string response;
 
+    // maps for status codes and mime types
+    std::map<int, std::string> status_codes;
+    std::map<std::string, std::string> mime_types;
 
     void handle_request();
     void parse_request();
     void process_request();
 
     Client& set_status_code(int status_code);
-    Client& set_reason_phrase(std::string reason_phrase);
-    Client& set_content_type(std::string content_type);
     Client& set_connection(std::string connection);
     Client& set_body(std::string body);
+    Client& set_content_type(std::string content_type);
 
     void build_response();
 };

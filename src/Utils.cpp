@@ -119,8 +119,7 @@ std::string int_to_ip(int host)
 void print_ascii_header()
 {
 	// WEBSERV in ASCII art
-	std::cout << "\033[1;32m"; // green color
-	std::cout << "\033[1;34m"; // blinking text
+	std::cout << "\033[1;33m";
 	std::cout << "####################################################################################" << std::endl;
 	std::cout << "#                                                                                  #" << std::endl;
 	std::cout << "#     /$$      /$$           /$$                                                   #" << std::endl;

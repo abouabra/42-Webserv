@@ -8,7 +8,7 @@
 
 Server::Server(Config config) : config(config) {
     this->max_fd = 0;
-	tv.tv_sec = 1;
+	tv.tv_sec = 3;
 	tv.tv_usec = 0;
 }
 
@@ -75,7 +75,6 @@ void Server::init() {
 		if (socket_fd > this->max_fd) {
 			this->max_fd = socket_fd;
 		}
-
 
 		// we log that the server has started
 		log("Server started on: " + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), WHITE);
@@ -268,7 +267,7 @@ void Server::accept_connection(int socket_fd, int index)
 	// (struct sockaddr *)&client_address: the client address cast to a sockaddr struct
 	// &client_address_size: the size of the client address
 	int client_socket_fd = accept(socket_fd, (struct sockaddr *)&client_address, &client_address_size);
-
+	
 	// if the client_socket_fd is less than 0, we throw an exception
 	if (client_socket_fd < 0)
 	{
@@ -331,7 +330,7 @@ int Server::read_from_client(int socket_fd, int index)
 	// so we log that the connection has been closed then we close the connection and return -1
 	if (bytes_read == 0)
 	{
-		log("Connection On Socket " + itoa(socket_fd) + " Closed By Client", GREEN);
+		log("Connection On Socket " + itoa(socket_fd) + " Closed By Client, Closing Connection ...", GREEN);
 		close_connection(socket_fd, index);
 		return -1;
 	}
@@ -410,8 +409,19 @@ int Server::write_to_client(int socket_fd, int index)
 		this->clients[index].request.clear();
 		this->clients[index].response.clear();
 
-		// we remove the socket from the writes fd_set
-		FD_CLR(socket_fd, &this->writes);
+		// we set the sent_size to 0
+		// this will reset the sent_size for the next request
+		this->clients[index].sent_size = 0;
+
+		// we check if the connection is close
+		// it means that the client wants to close the connection
+		if(this->clients[index].response_connection == "close")
+			close_connection(socket_fd, index);
+		
+		// else we remove the socket from the writes fd_set
+		// because we have sent all the data
+		else
+			FD_CLR(socket_fd, &this->writes);
 	}
 
 	// we update the timeout of the client
@@ -436,7 +446,7 @@ int Server::check_for_timeout(Client client, int index)
 	if (diff >= TIMEOUT)
 	{
 		// we log that the connection has timed out
-		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out", GREEN);
+		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out, Closing Connection ...", GREEN);
 
 		// we close the connection
 		close_connection(client.socket_fd, index);
