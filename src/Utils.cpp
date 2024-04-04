@@ -40,6 +40,11 @@ std::string read_file(std::string name)
 	std::string content;
 	std::string line;
 
+	if(!file.is_open())
+	{
+		log("Error: Could not open file: " + name, RED);
+		return "";
+	}
 
 	while(std::getline(file, line))
 	{

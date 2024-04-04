@@ -203,11 +203,16 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			throw(std::runtime_error("Invalid server config tabs"));
 		}
 
+		//here we clear the key and value
+		key.clear();
+		value.clear();
+
 		// here we parse the line
 		// we split the line into a key and a value
 		std::stringstream ss_2(line);
 		ss_2 >> key;
 		ss_2 >> value;
+
 
 		// here we check if there is still data on the line
 		// if there is we throw an exception
@@ -313,6 +318,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		else if (key == "location:")
 		{
 			Location location;
+
 			// here we check if the location path is valid
 			if (is_location_path_valid(value) == false)
 			{
@@ -322,7 +328,14 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 			// then we parse the location block
 			location = parse_server_location(ss);
+
+			// we store the path in the location object
 			location.path = value;
+			// if the location methods are empty we add the GET method as default
+			if(location.methods.empty())
+				location.methods.push_back("GET");
+
+			// we add the location to the server
 			new_serve.locations.push_back(location);
 		}
 		else {
@@ -659,7 +672,7 @@ bool is_location_path_valid(std::string &path)
 	return true;
 }
 
-bool is_redirect_url_valid(std::string &path)
+bool is_redirect_URL_valid(std::string &path)
 {
 	// here we check if the path is valid
 	// if the path is empty we return false
@@ -707,7 +720,7 @@ void Config::print_config()
 				std::cout << servers[i].locations[j].methods[k] << " ";
 			std::cout << std::endl;
 			
-			std::cout << "\t\tRedirect url: " << servers[i].locations[j].redirect_url << std::endl;
+			std::cout << "\t\tRedirect url: " << servers[i].locations[j].redirect_URL << std::endl;
 			std::cout << "\t\tDirectory listing: " << servers[i].locations[j].directory_listing << std::endl;
 			std::cout << "\t\tUpload enabled: " << servers[i].locations[j].upload_enabled << std::endl;
 			std::cout << "\t\tUpload directory: " << servers[i].locations[j].upload_directory << std::endl;
@@ -752,6 +765,7 @@ Location parse_server_location(std::stringstream &ss)
 			throw(std::runtime_error("Invalid config syntax"));
 		}
 
+		
 		// here we check the location root keyword
 		// it has the same check as the server root
 		if (key == "root:")
@@ -769,6 +783,7 @@ Location parse_server_location(std::stringstream &ss)
 		//here we check the location methods keyword
 		else if (key == "methods:")
 		{
+
 			// we check the initial value if it is a valid method
 			if (is_valid_method(value))
 				location.methods.push_back(value);
@@ -806,24 +821,18 @@ Location parse_server_location(std::stringstream &ss)
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method separator"));
 			}
-
-			// if there are no methods we add the GET method
-			if(location.methods.empty())
-			{
-				location.methods.push_back("GET");
-			}
 		}
-		else if (key == "redirect_url:")
+		else if (key == "redirect_URL:")
 		{
 			// check duplicate
-			if (location.redirect_url.empty() == false)
+			if (location.redirect_URL.empty() == false)
 			{
 				std::cout << line << std::endl;
-				throw(std::runtime_error("duplicated redirect_url"));
+				throw(std::runtime_error("duplicated redirect_URL"));
 			}
 
 			// here we check if the redirect url is a valid path
-			assign_if_valid(key, value, location.redirect_url, is_redirect_url_valid);
+			assign_if_valid(key, value, location.redirect_URL, is_redirect_URL_valid);
 
 		}
 		else if (key == "directory_listing:")
@@ -1038,7 +1047,7 @@ Location& Location::Location::operator=(Location const &obj)
 		root = obj.root;
 		index = obj.index;
 		methods = obj.methods;
-		redirect_url = obj.redirect_url;
+		redirect_URL = obj.redirect_URL;
 		directory_listing = obj.directory_listing;
 		upload_enabled = obj.upload_enabled;
 		upload_directory = obj.upload_directory;

@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <exception>
 #include <iostream>
 #include <map>
@@ -17,7 +18,7 @@ public:
 	std::string root;
 	std::string index;
 	std::vector<std::string> methods;
-	std::string redirect_url;
+	std::string redirect_URL;
 	bool directory_listing;
 	bool upload_enabled;
 	std::string upload_directory;
@@ -34,7 +35,7 @@ public:
 	int host;
 	int port;
 	std::string root;
-	int max_body_size;
+	size_t max_body_size;
 	std::string index;
 	std::map<int, std::string> error_pages;
 	std::map<std::string, std::string> cgi;
@@ -82,7 +83,7 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss);
 
 Location parse_server_location(std::stringstream &ss);
 bool is_location_path_valid(std::string &path);
-bool is_redirect_url_valid(std::string &path);
+bool is_redirect_URL_valid(std::string &path);
 bool is_upload_directory_valid(std::string &upload_directory);
 void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods);
 bool is_valid_method(std::string &method);

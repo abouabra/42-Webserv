@@ -48,11 +48,23 @@ public:
     void handle_request();
     void parse_request();
     void process_request();
+    std::string check_error_page(int status_code);
 
     Client& set_status_code(int status_code);
     Client& set_connection(std::string connection);
     Client& set_body(std::string body);
     Client& set_content_type(std::string content_type);
 
+
     void build_response();
+    bool check_request_validity();
+    std::string generic_error_page(int status_code);
+    void send_error_response(int status_code);
+    int find_matching_location();
+    bool process_location_redirection(int location_idx);
+    bool validate_method_for_location(int location_idx);
+    void process_GET(int location_idx);
+    void process_POST(int location_idx);
+    void process_DELETE(int location_idx);
+
 };
