@@ -3,6 +3,8 @@
 #include <iostream>
 #include <map>
 #include <string>
+#include <sys/stat.h>
+#include <dirent.h>
 
 class Client {
 public:
@@ -63,8 +65,18 @@ public:
     int find_matching_location();
     bool process_location_redirection(int location_idx);
     bool validate_method_for_location(int location_idx);
-    void process_GET(int location_idx);
-    void process_POST(int location_idx);
-    void process_DELETE(int location_idx);
+    void process_GET(Location& location);
+    void process_POST(Location& location);
+    void process_DELETE(Location& location);
 
+    std::string construct_resource_path(Location& location);
+    bool verify_resource_existence(std::string &resource_path);
+    bool is_path_directory(std::string &resource_path);
+    void process_directory(Location& location, std::string resource_path);
+    void process_file(std::string resource_path);
+    bool has_uri_trailing_slash();
+    void serve_directory_listing(std::string &resource_path);
+    bool should_be_processed_by_cgi(std::string &resource_path);
+    void serve_dynamic_content(std::string &resource_path);
+    void serve_static_content(std::string &resource_path);
 };

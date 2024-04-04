@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -52,3 +53,7 @@ int ip_to_int(std::string &host);
 std::string int_to_ip(int host);
 
 void print_ascii_header();
+
+std::string convert_size(size_t size);
+
+std::string extension_to_html_icon(std::string extension);

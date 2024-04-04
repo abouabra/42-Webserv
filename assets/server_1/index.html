@@ -46,21 +46,22 @@
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/404'">
+						onclick="location.href='/error_pages'">
+						Test 403
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/404_test'">
 						Test 404
 					</button>
-					<button
-						class="button"
-						role="button"
-						onclick="location.href='/405'">
-						Test 405
-					</button>
-					<button
-						class="button"
-						role="button"
-						onclick="location.href='/413'">
-						Test 413
-					</button>
+					<form action="/405_test" method="POST">
+						<button
+							class="button"
+							role="button">
+							Test 405
+						</button>
+					</form>
 				</div>
 			</div>
 			<div class="right-side"></div>

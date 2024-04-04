@@ -1,6 +1,10 @@
 #include "../includes/Client.hpp"
+#include <algorithm>
+#include <map>
 #include <sstream>
 #include <string>
+#include <unistd.h>
+#include <vector>
 
 Client::Client() {
 }
@@ -235,11 +239,11 @@ void Client::process_request() {
 
 	// check what method is used and call the appropriate function
 	if (method == "GET")
-		process_GET(location_idx);
+		process_GET(config.locations[location_idx]);
 	else if (method == "POST")
-		process_POST(location_idx);
+		process_POST(config.locations[location_idx]);
 	else if (method == "DELETE")
-		process_DELETE(location_idx);
+		process_DELETE(config.locations[location_idx]);
 }
 
 bool Client::check_request_validity()
@@ -287,6 +291,7 @@ void Client::send_error_response(int status_code) {
     this->set_status_code(status_code)
         .set_connection(this->connection)
         .set_body(check_error_page(status_code))
+		.set_content_type("text/html")
         .build_response();
 }
 
@@ -431,9 +436,293 @@ bool Client::validate_method_for_location(int location_idx)
 	return false;
 }
 
-void Client::process_GET(int location_idx)
+void Client::process_GET(Location& location)
 {
-	(void) location_idx;
+	// here we process the GET request
+
+	// we get the full path of the resource
+	std::string full_path = construct_resource_path(location);
+
+	// we check if the resource exists
+	// if it fails send a 404 response and return
+	if (verify_resource_existence(full_path) == false)
+		return;
+
+	// we check if the resource is a directory or a file
+	if(is_path_directory(full_path) == true)
+		process_directory(location, full_path);
+	else
+		process_file(full_path);
+
+}
+
+std::string Client::construct_resource_path(Location& location)
+{
+	// here we get the full path of the resource
+
+	// we define the root path
+	// if the location root is empty we fallback to the server root
+	std::string root = location.root.empty() ? this->config.root : location.root;
+
+	// we define the URL path
+	// we need to remove the first character from the uri because forward slash already exists in the root path
+	std::string url_path = uri.substr(1);
+
+	// we define the full path
+	// we do this by concatenating the root path and the uri
+	std::string full_path = root + url_path;
+
+	// we return the full path
+	return full_path;
+}
+
+bool Client::verify_resource_existence(std::string &resource_path)
+{
+	// here we check if the resource exists
+	// if it does we return true otherwise we send a 404 response
+
+	// we check if the resource exists using the access system call
+	// it needs the resource path and the F_OK flag to check if the file exists
+	// F_OK is a flag that checks if the file exists
+	if (access(resource_path.c_str(), F_OK) == -1)
+	{
+		send_error_response(404);
+		return false;
+	}
+
+	// if the resource exists we return true
+	return true;
+}
+
+bool Client::is_path_directory(std::string &path)
+{
+	// here we check if the resource is a directory
+
+	// we define a struct to hold the file information
+	struct stat s;
+
+	// we use the stat system call to get the file information
+	stat(path.c_str(),&s);
+
+	// The s struct, holds a bitmask representing various file attributes.
+	// we do the bitwise AND operator (&) to isolate the specific bit that indicates directory status using the S_IFDIR flag.
+	// If the resulting value is non-zero, it confirms that the file is a directory and returns true.
+	if(s.st_mode & S_IFDIR)
+		return true;
+
+	// otherwise we return false
+	return false;
+}
+
+void Client::process_directory(Location& location, std::string full_path)
+{
+	// here we process the directory
+
+	// we check if the uri has a doesnt have a trailing slash
+	// if so we redirect to the uri with a trailing slash
+	if(has_uri_trailing_slash() == false)
+		return;
+
+	// we check if the index file is defined in the location
+	// and if it exists in the directory
+	// if all requirements are met we serve the index file
+	if(location.index.empty() == false && access((full_path + location.index).c_str(), F_OK) != -1)
+	{
+		// process the file
+		process_file(full_path + location.index);
+		return;
+	}
+
+	// here we check if the directory listing is enabled
+	// if true we serve the directory listing
+	if(location.directory_listing == true)
+	{
+		serve_directory_listing(full_path);
+		return;
+	}
+
+	// if we reach here we send a 403 response
+	send_error_response(403);
+}
+
+bool Client::has_uri_trailing_slash()
+{
+	// here we check if the uri has a trailing slash
+	// if it does we send a 301 response
+
+	// we check if the uri doesnt a trailing slash
+	// we do this by checking the last character of the uri
+	if (uri[uri.size() - 1] != '/')
+	{
+		// we build the raw response for the redirection
+
+		// we define the status line
+		this->response = "HTTP/1.1 301 Moved Permanently\r\n";
+
+		// we define the Location header that contains the redirection URL
+		this->response += "Location: " + this->uri + "/\r\n";
+
+		// we define the connection header
+		this->response += "Connection: " + this->connection + "\r\n";
+
+		// we define the content length header
+		this->response += "Content-Length: 0\r\n";
+
+		// we define the content type header
+		this->response += "Content-Type: text/html\r\n";
+
+		// we end the headers with a carriage return and line feed (\r\n)
+		this->response += "\r\n";
+
+		// we return false to indicate that the uri has a no trailing slash
+		return false;
+	}
+
+	// we return true to indicate that the uri does have a trailing slash
+	return true;
+}
+
+void Client::serve_directory_listing(std::string &resource_path)
+{
+	// This function opens the directory at the specified resource path, iterates through
+	// its entries, and builds an HTML response containing a table with file information
+	// (name, size, last modified date). It also handles parent directory navigation
+	// and includes icons for different file types (using the `extension_to_html_icon` function).
+
+	// we define the html header with css
+	std::string body = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Index of " + resource_path + "</title><style>";
+	body+= "body{font-family:monospace;font-size:16px;margin:0;padding:20px;background-color:#141615;color:#fff}.table_container{display:flex;flex-direction:column;justify-content:center;align-items:center}h1{margin-bottom:20px}table{width:50%;border-collapse:collapse}th,td{padding:5px 10px;border:1px solid transparent}th{text-align:left;font-weight:bold;font-size:18px}th:nth-child(1){width:50%}a{color:#fff;text-decoration:none}a:hover{text-decoration:underline}table tbody tr:hover{background-color:#3b3b3b}";
+	body+= "</style></head><body><div class=\"table_container\"><h1>Index of "+ resource_path +"</h1><table><thead><tr><th>Name</th><th>Size</th><th>Last Modified</th></tr></thead><tbody>";
+
+	// we define variables
+	struct dirent *entry;
+	std::vector<std::string> files;
+	std::string line;
+	char time_str[80];
+	DIR *dp;
+
+	// we open the directory
+	dp = opendir(resource_path.c_str());
+
+	// Process directory entries
+	// we loop through the directory entries
+	while ((entry = readdir(dp)))
+	{
+		// we get the full path of the entry
+		std::string full_path = resource_path + "/" + entry->d_name;
+
+		// we get the file information
+		struct stat file_stat;
+		stat(full_path.c_str(), &file_stat);
+
+		// if the entry is a file we get the file information
+		if (entry->d_type == DT_REG)
+		{
+			// we get the file size then convert it to human readable format
+			std::time_t mtime = file_stat.st_mtime;
+			std::tm* mod_time = std::localtime(&mtime);
+			strftime(time_str, sizeof(time_str), "%d/%m/%Y %H:%M:%S", mod_time);
+
+			// we get the file extension
+			std::string extension = full_path.substr(full_path.find_last_of(".") + 1);
+			
+			// we build the line for the file
+			line = "<tr><td>" + extension_to_html_icon(extension) + "; <a href=\"" + std::string(entry->d_name) + "\">" + std::string(entry->d_name) + "</a></td><td>" + convert_size(file_stat.st_size) + "</td><td>" + time_str + "</td></tr>";
+		}
+		// if the entry is a directory we get the directory information
+		else
+		{
+			// we skip the current directory
+			if(entry->d_name == std::string("."))
+				continue;
+
+			// we have a custom line for the parent directory
+			// we have to continue to skip the parent directory from being added to files to not get sorted cause then it will not apear first
+			if(entry->d_name == std::string(".."))
+			{
+				line = "<tr><td>&#128281; <a href=\"../\">Parent Directory</a></td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+				body+= line;
+				continue;
+			}
+
+			// we build the line for the directory
+			else
+				line = "<tr><td>&#128193; <a href=\"" + std::string(entry->d_name) + "/\">" + std::string(entry->d_name) + "/</a></td><td>&nbsp;</td><td>&nbsp;</td></tr>";
+		}
+
+		// we add the line to the files vector
+		files.push_back(line);
+	}
+
+	// we close the directory
+	closedir(dp);
+
+	// we sort the files in alphabetical order
+	std::sort(files.begin(), files.end());
+
+	// we add the files to the body
+	for (size_t i = 0; i < files.size(); i++)
+		body += files[i];
+
+	// we end the body
+	body += "</tbody></table></div></body></html>";
+
+	// we build the response
+	this->set_status_code(200)
+		.set_content_type("text/html")
+		.set_connection(this->connection)
+		.set_body(body)
+		.build_response();
+}
+
+void Client::process_file(std::string resource_path)
+{
+	// check if the file is static file or dynamic file
+	if(should_be_processed_by_cgi(resource_path) == true)
+		serve_dynamic_content(resource_path);
+	else
+		serve_static_content(resource_path);
+}
+
+bool Client::should_be_processed_by_cgi(std::string &resource_path)
+{
+	// here we check if the file is a dynamic file
+	// we do this by checking the file extension
+
+	// we get the file extension
+	std::string extension = resource_path.substr(resource_path.find_last_of(".") + 1);
+
+	// we check if the file extension is in cgi map in server block
+	for (std::map<std::string, std::string>::iterator it = this->config.cgi.begin(); it != this->config.cgi.end(); it++)
+	{
+		// if the file extension is in the cgi map we return true
+		if (it->first == extension)
+			return true;
+	}
+
+	// otherwise we return false
+	return false;
+}
+
+void Client::serve_static_content(std::string &resource_path)
+{
+	// here we serve the static content
+
+	// we get the file extension
+	std::string extension = resource_path.substr(resource_path.find_last_of(".") + 1);
+	if(extension.empty())
+		extension = "txt";
+	// we read the file and send it as the response
+	this->set_status_code(200)
+		.set_content_type(mime_types[extension])
+		.set_connection(connection)
+		.set_body(read_file(resource_path))
+		.build_response();
+}
+
+void Client::serve_dynamic_content(std::string &resource_path)
+{
+	(void) resource_path;
 
     // we send a test response
     this->set_status_code(200)
@@ -443,9 +732,9 @@ void Client::process_GET(int location_idx)
         .build_response();
 }
 
-void Client::process_POST(int location_idx)
+void Client::process_POST(Location& location)
 {
-	(void) location_idx;
+	(void) location;
 
 
 
@@ -457,9 +746,9 @@ void Client::process_POST(int location_idx)
         .build_response();
 }
 
-void Client::process_DELETE(int location_idx)
+void Client::process_DELETE(Location& location)
 {
-	(void) location_idx;
+	(void) location;
 
 
 

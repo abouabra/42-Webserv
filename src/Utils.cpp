@@ -42,7 +42,7 @@ std::string read_file(std::string name)
 
 	if(!file.is_open())
 	{
-		log("Error: Could not open file: " + name, RED);
+		// log("Error: Could not open file: " + name, RED);
 		return "";
 	}
 
@@ -92,6 +92,7 @@ int ft_atoi(std::string str)
 
 int ip_to_int(std::string &host)
 {
+	// Example: "127.0.0.1" -> 2130706433
 	std::stringstream ss(host);
 	std::string token;
 	int ip = 0;
@@ -108,6 +109,7 @@ int ip_to_int(std::string &host)
 
 std::string int_to_ip(int host)
 {
+	// Example: 2130706433 -> "127.0.0.1"
 	std::string ip;
 	for (int i = 0; i < 4; i++)
 	{
@@ -141,4 +143,65 @@ void print_ascii_header()
 	std::cout << "####################################################################################" << std::endl;
 	std::cout << "\033[0m";
 	std::cout << std::endl;																			
+}
+
+
+std::string convert_size(size_t size)
+{
+	// we will convert the size to the most appropriate unit
+
+	std::string unit = "B";
+	if (size > 1024)
+	{
+		size /= 1024;
+		unit = "KB";
+	}
+	if (size > 1024)
+	{
+		size /= 1024;
+		unit = "MB";
+	}
+	if (size > 1024)
+	{
+		size /= 1024;
+		unit = "GB";
+	}
+	return itoa(size) + " " + unit;
+}
+
+std::string extension_to_html_icon(std::string extension) {
+
+    // Map extensions to corresponding HTML character icons
+    std::map<std::string, std::string> icons;
+
+	icons["txt"] = "&#128196";  // Text file
+	icons["html"] = "&#128195";  // HTML file
+	icons["htm"] = "&#128195";   // HTM file
+	icons["pdf"] = "&#128467";   // PDF document
+	icons["doc"] = "&#128205";   // Word document
+	icons["docx"] = "&#128205";  // Word document (newer format)
+	icons["xls"] = "&#128185";   // Excel spreadsheet
+	icons["xlsx"] = "&#128185";  // Excel spreadsheet (newer format)
+	icons["ppt"] = "&#128221";   // PowerPoint presentation
+	icons["pptx"] = "&#128221";  // PowerPoint presentation (newer format)
+	icons["jpg"] = "&#128257";   // JPEG image
+	icons["jpeg"] = "&#128257";  // JPEG image
+	icons["png"] = "&#128254";   // PNG image
+	icons["gif"] = "&#128195";   // GIF image
+	icons["bmp"] = "&#128258";   // BMP image
+	icons["mp3"] = "&#128245";   // MP3 audio
+	icons["wav"] = "&#128259";   // WAV audio
+	icons["mp4"] = "&#128249";   // MP4 video
+ 
+
+    // Handle default case for unknown extensions
+    std::string default_icon = "&#128193;";  // Generic file icon
+
+    if (icons.find(extension) != icons.end()) {
+        // Found a specific mapping, return the associated icon
+        return icons[extension];
+    } else {
+        // No specific mapping, return the default icon
+        return default_icon;
+    }
 }

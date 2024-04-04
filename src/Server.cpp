@@ -8,7 +8,7 @@
 
 Server::Server(Config config) : config(config) {
     this->max_fd = 0;
-	tv.tv_sec = 3;
+	tv.tv_sec = 5;
 	tv.tv_usec = 0;
 }
 
