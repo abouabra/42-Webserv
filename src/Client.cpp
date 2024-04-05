@@ -1,5 +1,8 @@
 #include "../includes/Client.hpp"
 #include <algorithm>
+#include <bits/types/time_t.h>
+#include <cstddef>
+#include <cstring>
 #include <map>
 #include <sstream>
 #include <string>
@@ -169,6 +172,15 @@ void Client::parse_request()
         {
             std::stringstream ss_2(line);
             ss_2 >> this->method >> this->uri >> this->protocol;
+
+			// parse query string if it exists (we found ?)
+			size_t query_string_pos = this->uri.find("?");
+			if(query_string_pos != std::string::npos)
+			{
+				// we extract the query string and remove it from the uri
+				this->request_query_string = this->uri.substr(query_string_pos + 1);
+				this->uri = this->uri.substr(0, query_string_pos);
+			}
         }
 
         // we parse the host header
@@ -186,6 +198,10 @@ void Client::parse_request()
         // we parse the content-type header
         if (line.find("Content-Type: ") != std::string::npos)
             this->content_type = line.substr(14);
+
+		// we parse the transfer-encoding header
+		if (line.find("Transfer-Encoding: ") != std::string::npos)
+			this->transfer_encoding = line.substr(19);
 
         // we parse the cookie header
         if (line.find("Cookie: ") != std::string::npos)
@@ -208,9 +224,11 @@ void Client::parse_request()
     // std::cout << "Connection: |" << this->connection << "|" << std::endl;
     // std::cout << "Content-Length: |" << this->content_length << "|" << std::endl;
     // std::cout << "Content-Type: |" << this->content_type << "|" << std::endl;
+	// std::cout << "Request Query String: |" << this->request_query_string << "|" << std::endl;
     // std::cout << "Cookie: |" << this->cookie << "|" << std::endl;
     // std::cout << std::endl;
     // std::cout << "Request Body: |" << this->request_body << "|" << std::endl;
+
 }
 
 void Client::process_request() {
@@ -248,6 +266,24 @@ void Client::process_request() {
 
 bool Client::check_request_validity()
 {
+	// we check if transfer-Encoding header exist and is different to “chunked”
+	// if it does we send a 501 response
+	if (transfer_encoding.empty() == false && transfer_encoding != "chunked")
+	{
+		send_error_response(501);
+		return false;
+	}
+
+	// if Transfer-Encoding does not exist and Content-Length does not exist and the method is POST
+	// we send a 400 response
+	if (transfer_encoding.empty() && content_length.empty() && method == "POST")
+	{
+		send_error_response(400);
+		return false;
+	}
+
+	//
+
     // check if the uri contains any invalid characters or empty
 	// if it does we send a 400 response
     std::string URI_charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%";
@@ -690,7 +726,7 @@ bool Client::should_be_processed_by_cgi(std::string &resource_path)
 	// we do this by checking the file extension
 
 	// we get the file extension
-	std::string extension = resource_path.substr(resource_path.find_last_of(".") + 1);
+	std::string extension = resource_path.substr(resource_path.find_last_of("."));
 
 	// we check if the file extension is in cgi map in server block
 	for (std::map<std::string, std::string>::iterator it = this->config.cgi.begin(); it != this->config.cgi.end(); it++)
@@ -722,28 +758,268 @@ void Client::serve_static_content(std::string &resource_path)
 
 void Client::serve_dynamic_content(std::string &resource_path)
 {
-	(void) resource_path;
+	// we check what method is used and call the appropriate function
+	if(method == "GET")
+		process_GET_CGI(resource_path);
+	else if (method == "POST")
+		process_POST_CGI(resource_path);
 
-    // we send a test response
-    this->set_status_code(200)
-        .set_content_type("text/html")
-        .set_connection(this->connection)
-        .set_body("Hello from GET")
-        .build_response();
 }
+
+void Client::process_GET_CGI(std::string &resource_path)
+{
+	// here we run the CGI script for the GET method
+
+	// we get the path of cgi-bin executable
+	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
+	
+	// first we need to make environment variables QUERY_STRING and REQUEST_METHOD and PATH_INFO to pass to the CGI script
+	env.push_back("QUERY_STRING=" + request_query_string);
+	env.push_back("REQUEST_METHOD=GET");
+	env.push_back("PATH_INFO=" + resource_path);
+
+	// we need to make a new char **argv
+	// we need to add the executable path and the resource path
+	char *argv[] = {strdup(executable_path.c_str()),
+					strdup(resource_path.c_str()),
+					NULL};
+
+	// we need to make a new char **envp
+	char *envp[env.size() + 1];
+	for (size_t i = 0; i < env.size(); i++)
+		envp[i] = strdup(env[i].c_str());
+	envp[env.size()] = NULL;
+
+	// we execute the CGI script
+	execute_CGI(executable_path.c_str(), argv, envp);
+
+	// we free the memory
+
+	// we free the memory allocated for the environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		free(envp[i]);
+
+	// we free the memory allocated for the argv
+	for (size_t i = 0; i < 2; i++)
+		free(argv[i]);
+
+}
+
+void Client::execute_CGI(const char *path, char *argv[], char *envp[])
+{
+	// here we execute the CGI script
+
+	// we define the pipe file descriptors and status variable
+	int pipe_fd[2];
+
+	int status;
+
+	// we create the pipe
+	if(pipe(pipe_fd) < 0)
+	{
+		// if the pipe fails we send a 500 response
+		send_error_response(500);
+		return;
+	}
+
+	// we fork the process
+	pid_t pid = fork();
+	if (pid == -1)
+	{
+		// if the fork fails we close the pipes and then send a 500 response
+		close(pipe_fd[0]);
+		close(pipe_fd[1]);
+		send_error_response(500);
+		return;
+	}
+
+	// if the fork is the child process
+	if (pid == 0)
+	{
+		// we close the read end of the pipe
+		close(pipe_fd[0]);
+
+		// we check if the method is POST
+		// if we make the stdin the read end of the pipe
+		// and we write the request body to the write end of the pipe
+		if(method == "POST")
+		{
+			// we create a pipe
+			int body_pipes[2];
+
+			if (pipe(body_pipes) == -1) {
+				// if the pipe fails we send a 500 response
+				send_error_response(500);
+				exit(1);
+			}
+
+			// Redirect child's stdin to read end of pipe
+			dup2(body_pipes[0], STDIN_FILENO);
+
+			// Write request body to write end of pipe
+			write(body_pipes[1], request_body.c_str(), request_body.size());
+
+			// Close the unused write end in the child process
+			close(body_pipes[1]);
+		}
+
+		// we redirect the stdout to the write end of the pipe
+		dup2(pipe_fd[1], STDOUT_FILENO);
+
+		// we execute the CGI script
+		execve(path, argv, envp);
+
+		// if the execve fails we send a 500 response
+		send_error_response(500);
+		exit(1);
+	}
+
+	// if the fork is the parent process
+	else
+	{
+		// we close the write end of the pipe
+		close(pipe_fd[1]);
+
+		// we define out starting time
+		time_t start_time = time(NULL);
+
+		// here we check for timeout of the child process
+		while(true)
+		{
+			// we wait for the child process to finish
+			// we need to recover the exit status of the child process
+			int result = waitpid(pid, &status, WNOHANG);
+
+			// we check if the child process has finished
+			// result will be the PID of the child process if it has finished
+			if (result > 0)
+				break;
+		
+			// we check if the child process has timed out
+			time_t current_time = time(NULL);
+			if (current_time - start_time >= CGI_TIMEOUT)
+			{
+				// if the child process has timed out we kill the child process
+				kill(pid, SIGKILL);
+
+				// we close the read end of the pipe
+				close(pipe_fd[0]);
+
+				// we send a 500 response
+				send_error_response(500);
+				return;
+			}
+		}
+
+		//extract the exit status of the child process
+		status = status >> 8;
+
+		// we check if the CGI script failed
+		if (status != 0)
+		{
+			// if the CGI script fails we send a 500 response
+			send_error_response(500);
+			return;
+		}
+
+		// we read the response from the CGI script
+
+		// we define varibales
+		char buffer[4096];
+		std::memset(buffer, 0, 4096);
+		std::string line;
+		// we loop through the response from the CGI script
+		while (true)
+		{
+			// we read the response from the CGI script
+			int bytes_read = read(pipe_fd[0], buffer, 4096);
+
+			// if the bytes read is 0 it means we reached the end of the response then we break the loop
+			if (bytes_read == 0)
+				break;
+
+			// if the bytes read is less than 0 it means an error occurred
+			// we send a 500 response, close the pipe and return
+			if (bytes_read < 0)
+			{
+				send_error_response(500);
+				close(pipe_fd[0]);
+				return;
+			}
+
+			// we append the buffer to the line
+			line += std::string(buffer, bytes_read);
+
+			// we clear the buffer
+			std::memset(buffer, 0, 4096);
+		}
+
+		// we close the read end of the pipe
+		close(pipe_fd[0]);
+
+		// we set the raw received response from the CGI script as the response
+		this->response_status_code = 200;
+		this->response = line;
+	}
+}
+
+void Client::process_POST_CGI(std::string &resource_path)
+{
+	// here we run the CGI script for the POST method
+
+	// we get the path of cgi-bin executable
+	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
+
+	// first we need to make environment variables REQUEST_METHOD and CONTENT_TYPE and CONTENT_LENGTH and PATH_INFO to pass to the CGI script
+	env.push_back("REQUEST_METHOD=POST");
+	env.push_back("CONTENT_TYPE=" + this->content_type);
+	env.push_back("CONTENT_LENGTH=" + this->content_length);
+	env.push_back("PATH_INFO=" + resource_path);
+
+	// we need to make a new char **argv
+	// we need to add the executable path and the resource path
+	char *argv[] = {strdup(executable_path.c_str()),
+					strdup(resource_path.c_str()),
+					NULL};
+	
+
+	// we need to make a new char **envp
+	char *envp[env.size() + 1];
+	for (size_t i = 0; i < env.size(); i++)
+		envp[i] = strdup(env[i].c_str());
+	envp[env.size()] = NULL;
+
+	// we execute the CGI script
+	execute_CGI(executable_path.c_str(), argv, envp);
+
+	// we free the memory
+
+	// we free the memory allocated for the environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		free(envp[i]);
+
+	// we free the memory allocated for the argv
+	for (size_t i = 0; i < 2; i++)
+		free(argv[i]);
+
+}
+
 
 void Client::process_POST(Location& location)
 {
-	(void) location;
+	// we get the full path of the resource
+	std::string full_path = construct_resource_path(location);
 
+	// we check if the resource exists
+	// if it fails send a 404 response and return
+	if (verify_resource_existence(full_path) == false)
+		return;
 
-
-	// we send a test response
-    this->set_status_code(200)
-        .set_content_type("text/html")
-        .set_connection(this->connection)
-        .set_body("Hello from POST")
-        .build_response();
+	// we check if the resource is a directory or a file
+	if(is_path_directory(full_path) == true)
+		process_directory(location, full_path);
+	else
+		process_file(full_path);
 }
 
 void Client::process_DELETE(Location& location)

@@ -1,4 +1,5 @@
 #include "../includes/Utils.hpp"
+#include <bits/types/time_t.h>
 #include <iostream>
 
 void log(std::string message, int color)

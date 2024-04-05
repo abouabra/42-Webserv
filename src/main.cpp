@@ -11,7 +11,7 @@
 */
 
 
-int main(int ac, char **av)
+int main(int ac, char **av, char **ev)
 {
 	std::string file_name;
 
@@ -37,7 +37,7 @@ int main(int ac, char **av)
 		print_ascii_header();
 		Config config(file_name);
 
-		Server server(config);
+		Server server(config, ev);
 		server.init();
 	}
 	catch(const std::exception& e)

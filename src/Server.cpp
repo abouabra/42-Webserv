@@ -6,10 +6,11 @@
 #include <sys/select.h>
 #include <sys/socket.h>
 
-Server::Server(Config config) : config(config) {
+Server::Server(Config config, char **ev) : config(config) {
     this->max_fd = 0;
-	tv.tv_sec = 5;
+	tv.tv_sec = SELECT_TIMEOUT;
 	tv.tv_usec = 0;
+	convert_env_to_vector(ev);
 }
 
 Server::~Server() {
@@ -28,6 +29,17 @@ Server &Server::operator=(Server const &obj) {
     }
     return *this;
 }
+
+void Server::convert_env_to_vector(char **env) {
+	// here we convert the environment variables to a vector
+
+	// we loop through the environment variables
+	for (size_t i = 0; env[i] != NULL; i++) {
+		// we add the environment variable to the env vector
+		this->env.push_back(env[i]);
+	}
+}
+
 
 void Server::init() {
 
@@ -285,8 +297,11 @@ void Server::accept_connection(int socket_fd, int index)
 	FD_SET(client_socket_fd, &this->master);
 
 	// we create a Client object with the client_socket_fd, client address and port and the server config that the client is connected to
+	// we also set the env variable of the client to the env variable of the server
 	// and add it to the clients vector
 	Client client(client_socket_fd, ntohl(client_address.sin_addr.s_addr), ntohs(client_address.sin_port), this->config.servers[index]);
+	// we want to pass the environment variables to the client but each client must have its own copy
+	client.env = std::vector<std::string>(this->env);
 	this->clients.push_back(client);
 
 	// we check if the client_socket_fd is greater than the max_fd
@@ -439,11 +454,8 @@ int Server::check_for_timeout(Client client, int index)
 	// we get the current time
 	time_t current_time = time(NULL);
 
-	// we get the difference between the current time and the last activity time
-	time_t diff = current_time - client.timeout;
-
 	// we check if the difference is greater than the timeout value
-	if (diff >= TIMEOUT)
+	if (current_time - client.timeout >= REQUEST_TIMEOUT)
 	{
 		// we log that the connection has timed out
 		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out, Closing Connection ...", GREEN);

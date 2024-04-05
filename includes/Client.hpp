@@ -5,6 +5,10 @@
 #include <string>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+
+#define CGI_TIMEOUT 5
 
 class Client {
 public:
@@ -18,7 +22,9 @@ public:
     int port;
 
     ServerConfig config;
-    
+    std::vector<std::string> env;
+
+
     size_t sent_size;
     time_t timeout;
 
@@ -30,11 +36,12 @@ public:
     std::string protocol;
     std::string request_host;
 	std::string connection;
+    std::string transfer_encoding;
     std::string content_length;
     std::string content_type;
     std::string cookie;
     std::string request_body;
-
+    std::string request_query_string;
 
     // Response Parameters
     int response_status_code;
@@ -79,4 +86,11 @@ public:
     bool should_be_processed_by_cgi(std::string &resource_path);
     void serve_dynamic_content(std::string &resource_path);
     void serve_static_content(std::string &resource_path);
+
+    void process_GET_CGI(std::string &resource_path);
+    void execute_CGI(const char *path, char *argv[], char *envp[]);
+
+    void process_POST_CGI(std::string &resource_path);
+
+
 };

@@ -12,11 +12,12 @@
 #include "Client.hpp"
 
 #define BUFFER_SIZE 1024
-#define TIMEOUT 5
+#define SELECT_TIMEOUT 5
+#define REQUEST_TIMEOUT 5
 
 class Server {
 public:
-	Server(Config config);
+	Server(Config config, char **ev);
 	~Server();
 	Server &operator=(Server const &obj);
 
@@ -24,14 +25,16 @@ public:
 	Config config;
 	
     std::vector<Client> clients;
-
 	fd_set master;
 	fd_set reads;
 	fd_set writes;
 	struct timeval tv;
 	int max_fd;
 
+    std::vector<std::string> env;
+    
     void init();
+    void convert_env_to_vector(char **env);
     int create_server_socket();
     void set_socket_to_non_blocking(int socket_fd);
     void set_socket_to_be_reusable(int socket_fd);
