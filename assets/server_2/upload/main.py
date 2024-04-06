@@ -3,16 +3,6 @@ import re
 import sys
 
 def parse_filename(content):
-
-    # seach for this the line containing this phrase then print it
-    # Content-Disposition:
-    # content_disposition_pattern = r'Content-Disposition:.*'  # Regular expression for Content-Disposition
-    # match = re.search(content_disposition_pattern, content, re.IGNORECASE)
-    # print(match.group(0), file=sys.stderr)
-
-
-
-
     # search for the filename
     filename_pattern = r'filename="([^"]+)"'  # Regular expression for filename
     match = re.search(filename_pattern, content, re.IGNORECASE)
@@ -39,18 +29,12 @@ def handle_upload(request_body):
             return "<h1>Error: Could not determine script path</h1>"
         script_path = script_path.rsplit("/", 1)[0]
         file_path = os.path.join(script_path, upload_dir, filename)
-        print(f"Uploading file to: {file_path}", file=sys.stderr)
-
-        # Remove trailing boundary and remove one more line
-        # data = data.rsplit(b'--', 1)[0].rsplit(b'\r\n', 1)[0]
-
-
 
         try:
             with open(file_path, "wb") as f:
                 data = data.split(b'\r\n--', 1)[0]
                 f.write(data)
-            return f"<h1>File uploaded successfully: {filename}</h1>"
+            return f"<h1>201 - Created</h1><h3>{filename} has been uploaded successfully!</h3><h3>Go to upload directory to see your file</h3>"
         except Exception as e:
             return f"<h1>Error during upload: {str(e)}</h1>"
 
@@ -58,17 +42,22 @@ def handle_upload(request_body):
 
 def main():
 
-    # print("Reached Here", file=sys.stderr)
+    method = os.environ.get("REQUEST_METHOD", "")
+    if method != "POST":
+        exit(1)
 
-
+    # Read the entire request body
     try:
-        # Read the entire request body
         request_body = sys.stdin.buffer.read()
     except Exception as e:
         print(f"Error reading request body: {str(e)}", file=sys.stderr)
         exit(1)
-    # print(request_body, file=sys.stderr)
-    response_body = handle_upload(request_body)
+
+    response_body = "<!DOCTYPE html><html><head><title>Upload</title><meta charset=\"UTF-8\" />"
+    response_body += "<style>body { font-family: sans-serif; background-color: #141615; color: #317aed; font-size: 2em; text-align: center; }</style>"
+    response_body += "</head><body>"
+    response_body += handle_upload(request_body)
+    response_body += "</body></html>"
 
     # Generate HTTP response headers
     print("HTTP/1.1 201 Created")

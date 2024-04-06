@@ -59,3 +59,7 @@ std::string convert_size(size_t size);
 std::string extension_to_html_icon(std::string extension);
 
 std::string GenerateUniqueFileName();
+
+std::string decode_URL(std::string URL);
+
+char* my_strdup(const std::string& str);

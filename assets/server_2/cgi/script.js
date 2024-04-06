@@ -9,15 +9,15 @@ form.addEventListener("submit", (event) => {
 	const selectedLanguage = languageSelect.value;
 
 	// Update form attributes
-	var extention;
+	var extension;
 	if (selectedLanguage == "python")
-		extention = ".py";
+		extension = ".py";
 	else if (selectedLanguage == "bash")
-		extention = ".sh";
+		extension = ".sh";
 	else if (selectedLanguage == "php")
-		extention = ".php";
+		extension = ".php";
 	form.method = selectedMethod;
-	form.action = `/cgi/run-${selectedLanguage}/${selectedMethod}_Default${extention}`;
+	form.action = `/cgi/run-${selectedLanguage}/${selectedMethod}_Default${extension}`;
 	form.enctype = "application/x-www-form-urlencoded";
 
 

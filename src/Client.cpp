@@ -145,9 +145,6 @@ void Client::handle_request()
 
     // process the request and generate response
     process_request();
-
-	// // log the response
-    // log("Response Sent To: " + this->request_host + ", Status Code: " + itoa(this->response_status_code) + " " + status_codes[this->response_status_code], CYAN);
 }
 
 void Client::parse_request()
@@ -159,8 +156,8 @@ void Client::parse_request()
     // and parse the request header
     while(std::getline(ss, line)) {
 
-        //replace \r with \0 to remove the carriage return
-        line.replace(line.find("\r"), 1, "\0");
+        // remove carriage return from the line
+        line = line.substr(0, line.size() - 1);
 
         // check if we reached the end of request header
         if (line.empty())
@@ -183,6 +180,7 @@ void Client::parse_request()
 				this->request_query_string = this->uri.substr(query_string_pos + 1);
 				this->uri = this->uri.substr(0, query_string_pos);
 			}
+
         }
 
         // we parse the host header
@@ -247,6 +245,9 @@ void Client::process_request() {
     // if not we send a 4xx response
 	if(check_request_validity() == false)
 		return;
+	
+	// here we decode the uri after we have checked the request validity
+	this->uri = decode_URL(this->uri);
 
 	// here we check if the URI is matched with a location
 	// if it did return -1 we send a 404 response
@@ -673,7 +674,15 @@ void Client::serve_directory_listing(std::string &resource_path)
 			strftime(time_str, sizeof(time_str), "%d/%m/%Y %H:%M:%S", mod_time);
 
 			// we get the file extension
-			std::string extension = full_path.substr(full_path.find_last_of(".") + 1);
+			std::string extension;
+			try
+			{
+				extension = full_path.substr(full_path.find_last_of(".") + 1);
+			}
+			catch(const std::exception& e)
+			{
+				extension = "txt";
+			}
 			
 			// we build the line for the file
 			line = "<tr><td>" + extension_to_html_icon(extension) + "; <a href=\"" + std::string(entry->d_name) + "\">" + std::string(entry->d_name) + "</a></td><td>" + convert_size(file_stat.st_size) + "</td><td>" + time_str + "</td></tr>";
@@ -739,7 +748,16 @@ bool Client::should_be_processed_by_cgi(std::string &resource_path)
 	// we do this by checking the file extension
 
 	// we get the file extension
-	std::string extension = resource_path.substr(resource_path.find_last_of("."));
+	std::string extension;
+	try
+	{
+		extension = resource_path.substr(resource_path.find_last_of("."));
+
+	}
+	catch(const std::exception& e)
+	{
+		return false;
+	}
 
 	// we check if the file extension is in cgi map in server block
 	for (std::map<std::string, std::string>::iterator it = this->config.cgi.begin(); it != this->config.cgi.end(); it++)
@@ -758,9 +776,13 @@ void Client::serve_static_content(std::string &resource_path)
 	// here we serve the static content
 
 	// we get the file extension
-	std::string extension = resource_path.substr(resource_path.find_last_of(".") + 1);
-	if(extension.empty())
+	std::string extension;
+	try {
+		extension = resource_path.substr(resource_path.find_last_of(".") + 1);
+	} catch (std::exception &e) {
 		extension = "txt";
+	}
+
 	// we read the file and send it as the response
 	this->set_status_code(200)
 		.set_content_type(mime_types[extension])
@@ -793,14 +815,14 @@ void Client::process_GET_CGI(std::string &resource_path)
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
-	char *argv[] = {strdup(executable_path.c_str()),
-					strdup(resource_path.c_str()),
+	char *argv[] = {my_strdup(executable_path), 
+					my_strdup(resource_path),
 					NULL};
 
 	// we need to make a new char **envp
 	char *envp[env.size() + 1];
 	for (size_t i = 0; i < env.size(); i++)
-		envp[i] = strdup(env[i].c_str());
+		envp[i] = my_strdup(env[i]);
 	envp[env.size()] = NULL;
 
 	// we execute the CGI script
@@ -1034,15 +1056,15 @@ void Client::process_POST_CGI(std::string &resource_path)
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
-	char *argv[] = {strdup(executable_path.c_str()),
-					strdup(resource_path.c_str()),
+	char *argv[] = {my_strdup(executable_path), 
+					my_strdup(resource_path),
 					NULL};
-	
+
 
 	// we need to make a new char **envp
 	char *envp[env.size() + 1];
 	for (size_t i = 0; i < env.size(); i++)
-		envp[i] = strdup(env[i].c_str());
+		envp[i] = my_strdup(env[i]);
 	envp[env.size()] = NULL;
 
 	// we execute the CGI script

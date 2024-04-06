@@ -196,7 +196,7 @@ std::string extension_to_html_icon(std::string extension) {
  
 
     // Handle default case for unknown extensions
-    std::string default_icon = "&#128193;";  // Generic file icon
+    std::string default_icon = "&#128196";  // Generic file icon
 
     if (icons.find(extension) != icons.end()) {
         // Found a specific mapping, return the associated icon
@@ -228,4 +228,41 @@ std::string GenerateUniqueFileName() {
     }
 
     return tempFilename;
+}
+
+std::string decode_URL(std::string URL) {
+    std::string decoded_URL;
+    decoded_URL.reserve(URL.length());  // Optimization: Reserve capacity
+
+    for (size_t i = 0; i < URL.length(); ++i) {
+        if (URL[i] == '%' && i + 2 < URL.length()) {
+            char hex1 = URL[i + 1];
+            char hex2 = URL[i + 2];
+            if (std::isxdigit(hex1) && std::isxdigit(hex2)) {
+		
+				// Convert hexadecimal digits to integer value
+				int digit1 = std::isdigit(hex1) ? hex1 - '0' : std::toupper(hex1) - 'A' + 10;
+				int digit2 = std::isdigit(hex2) ? hex2 - '0' : std::toupper(hex2) - 'A' + 10;
+				char decodedChar = (digit1 << 4) + digit2;
+				
+                decoded_URL += decodedChar;
+                i += 2; // Skip the next two characters
+            } else {
+                decoded_URL += URL[i];
+            }
+        } else if (URL[i] == '+') {
+            decoded_URL += ' ';
+        } else {
+            decoded_URL += URL[i];
+        }
+    }
+    return decoded_URL;
+}
+
+char* my_strdup(const std::string& str)
+{
+  size_t len = str.length() + 1;  // Allocate space for null terminator
+  char* arg = new char[len];
+  std::strcpy(arg, str.c_str());  // Copy string content
+  return arg;
 }
