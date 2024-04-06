@@ -41,7 +41,6 @@ def handle_upload(request_body):
     return "<h1>No file found in upload data</h1>"
 
 def main():
-
     method = os.environ.get("REQUEST_METHOD", "")
     if method != "POST":
         exit(1)

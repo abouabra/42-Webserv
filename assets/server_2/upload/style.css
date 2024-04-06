@@ -1,106 +1,143 @@
 body {
-    margin: 0;
-    padding: 0;
-    display: flex;
-    min-height: 100vh;
-    font-family: sans-serif;
-    background-color: #141615;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	min-height: 100vh;
+	font-family: sans-serif;
+	background-color: #141615;
 }
 
 .container {
-    display: flex;
-    flex-direction: row;
-    height: 100vh;
-    width: 100vw;
+	display: flex;
+	flex-direction: row;
+	height: 100vh;
+	width: 100vw;
 }
 
 .right-side {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    align-items: center;
-    padding: 2em;
-    color: #333;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	/* justify-content: space-around; */
+	align-items: center;
+	/* padding: 60px; */
+	color: #333;
 }
 
 .left-side {
-    flex: 1;
-    background-image: url(./img-1.png);
-    background-size: cover;
-    background-position: center;
+	flex: 1;
+	background-image: url(./img-1.png);
+	background-size: cover;
+	background-position: center;
 }
 
 h1 {
-    font-size: 3em;
-    text-align: center;
-    margin-top: 0;
-    color: #317aed;
+	font-size: 3em;
+	text-align: center;
+	margin-top: 0;
+	color: #317aed;
+    margin: 10%;
 }
 
 h2 {
-    font-size: 1.5em;
-    margin-bottom: 1em;
-    text-align: center;
-    color: #317aed;
+	font-size: 1.5em;
+	margin-bottom: 1em;
+	text-align: center;
+	color: #317aed;
 }
 
 .button {
-    align-items: center;
-    background-color: #317aed;
-    color: #141615;
-    border: 0;
-    border-radius: 8px;
-    box-sizing: border-box;
-    display: flex;
-    font-family: Phantomsans, sans-serif;
-    font-size: 20px;
-    justify-content: center;
-    line-height: 1em;
-    font-weight: bold;
-    max-width: 100%;
-    min-width: 140px;
-    padding: 19px 24px;
-    text-decoration: none;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    white-space: nowrap;
-    cursor: pointer;
+	align-items: center;
+	background-color: #317aed;
+	color: #141615;
+	border: 0;
+	border-radius: 8px;
+	box-sizing: border-box;
+	display: flex;
+	font-family: Phantomsans, sans-serif;
+	font-size: 20px;
+	justify-content: center;
+	line-height: 1em;
+	font-weight: bold;
+	max-width: 100%;
+	min-width: 140px;
+	padding: 19px 24px;
+	text-decoration: none;
+	user-select: none;
+	-webkit-user-select: none;
+	touch-action: manipulation;
+	white-space: nowrap;
+	cursor: pointer;
 }
 
 .button:active,
 .button:hover {
-    outline: 0;
+	outline: 0;
 }
 
 @media (min-width: 768px) {
-    .button {
-        font-size: 24px;
-        min-width: 196px;
-    }
+	.button {
+		font-size: 24px;
+		min-width: 196px;
+	}
 }
 
 .button-container {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
+	display: flex;
+	justify-content: space-around;
+	width: 100%;
 }
 
 .test-buttons {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
+	display: flex;
+	justify-content: space-around;
+	width: 100%;
 }
 
 .context {
-    width: 100%;
-    position: absolute;
-    top: 50vh;
+	width: 100%;
+	position: absolute;
+	top: 50vh;
 }
 
 .context h1 {
-    text-align: center;
-    color: #fff;
-    font-size: 50px;
+	text-align: center;
+	color: #fff;
+	font-size: 50px;
+}
+
+form {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}
+
+form {
+	background-color: #1c1e1e;
+	padding: 20px;
+	border-radius: 8px;
+	box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+	max-width: 600px;
+    min-height: 300px;
+	margin: 0 auto;
+}
+
+label {
+	display: block;
+    margin-left: 30px;
+    font-size: 2em;
+	color: #fff;
+    align-self: flex-start;
+}
+
+input[type="file"] {
+	margin: 50px;
+	background-color: #1c1e1e;
+    font-size: 2em;
+	color: #fff;
+	position: relative;
+	overflow: hidden;
+    cursor: pointer;
 }

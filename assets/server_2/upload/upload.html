@@ -11,13 +11,11 @@
 			<div class="left-side"></div>
 			<div class="right-side">
 				<h1>Upload Page</h1>
-				<h2>Click the button and choose the desired file to upload</h2>
-				<div class="upload-form">
 					<form action="/upload/main.py" method="post" enctype="multipart/form-data">
-						<input class="button" type="file" name="file" />
-						<button type="submit" class="button">Upload</button>
-					</form>
-				</div>
+						<label for="file">Select file to upload:</label>
+						<input type="file" name="file"><br>
+						<input class="button" type="submit" value="Upload">
+					  </form>
 			</div>
 		</div>
 	</body>
