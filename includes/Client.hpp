@@ -8,7 +8,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 
-#define CGI_TIMEOUT 5
+#define CGI_TIMEOUT 60
 
 class Client {
 public:
@@ -72,8 +72,7 @@ public:
     int find_matching_location();
     bool process_location_redirection(int location_idx);
     bool validate_method_for_location(int location_idx);
-    void process_GET(Location& location);
-    void process_POST(Location& location);
+    void process_GET_and_POST(Location& location);
     void process_DELETE(Location& location);
 
     std::string construct_resource_path(Location& location);
@@ -88,9 +87,6 @@ public:
     void serve_static_content(std::string &resource_path);
 
     void process_GET_CGI(std::string &resource_path);
-    void execute_CGI(const char *path, char *argv[], char *envp[]);
-
     void process_POST_CGI(std::string &resource_path);
-
-
+    void execute_CGI(const char *path, char *argv[], char *envp[]);
 };

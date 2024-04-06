@@ -9,7 +9,6 @@
 #include "Utils.hpp"
 
 #define DEFAULT_MAX_BODY_SIZE 1000000
-#define DEFAULT_UPLOAD_MAX_SIZE 5000000
 
 
 class Location {
@@ -20,9 +19,6 @@ public:
 	std::vector<std::string> methods;
 	std::string redirect_URL;
 	bool directory_listing;
-	bool upload_enabled;
-	std::string upload_directory;
-	int upload_max_size;
 
 	Location();
 	~Location();
@@ -84,7 +80,6 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss);
 Location parse_server_location(std::stringstream &ss);
 bool is_location_path_valid(std::string &path);
 bool is_redirect_URL_valid(std::string &path);
-bool is_upload_directory_valid(std::string &upload_directory);
 void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods);
 bool is_valid_method(std::string &method);
 

@@ -206,3 +206,26 @@ std::string extension_to_html_icon(std::string extension) {
         return default_icon;
     }
 }
+
+// Function to generate a unique temporary filename
+
+std::string GenerateUniqueFileName() {
+    std::string base = "/tmp/webserv_";
+    std::string tempFilename = base;
+
+    // Generate a unique temporary filename
+    const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const int alphabetLength = alphabet.length();
+
+    // Generate a seed for randomness based on current time
+    std::time_t currentTime = std::time(NULL);
+    unsigned int seed = static_cast<unsigned int>(currentTime);
+
+    // Custom pseudo-random number generator
+    for (int i = 0; i < 5; ++i) {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff; // Linear congruential generator
+        tempFilename += alphabet[seed % alphabetLength];
+    }
+
+    return tempFilename;
+}

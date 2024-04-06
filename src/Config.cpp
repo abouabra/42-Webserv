@@ -722,9 +722,6 @@ void Config::print_config()
 			
 			std::cout << "\t\tRedirect url: " << servers[i].locations[j].redirect_URL << std::endl;
 			std::cout << "\t\tDirectory listing: " << servers[i].locations[j].directory_listing << std::endl;
-			std::cout << "\t\tUpload enabled: " << servers[i].locations[j].upload_enabled << std::endl;
-			std::cout << "\t\tUpload directory: " << servers[i].locations[j].upload_directory << std::endl;
-			std::cout << "\t\tUpload max size: " << servers[i].locations[j].upload_max_size << std::endl;
 		}
 	}
 }
@@ -856,54 +853,6 @@ Location parse_server_location(std::stringstream &ss)
 				throw(std::runtime_error("Invalid config directory_listing"));
 			}
 		}
-		else if (key == "upload_enabled:")
-		{
-			// check duplicate
-			if (location.upload_enabled != false)
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("duplicated upload_enabled"));
-			}
-
-			// here we check if the upload enabled is valid
-			// then we store the value
-			if (value == "false")
-				location.upload_enabled = false;
-			else if (value == "true")
-				location.upload_enabled = true;
-			else
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("Invalid config upload_enabled"));
-			}
-		}
-		else if (key == "upload_directory:")
-		{
-			// check duplicate
-			if (location.upload_directory.empty() == false)
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("duplicated upload_directory"));
-			}
-
-			// here we check if the upload directory is valid
-			assign_if_valid(key, value, location.upload_directory, is_upload_directory_valid);
-		}
-		else if (key == "upload_max_size:")
-		{
-			// check duplicate
-			if (location.upload_max_size != DEFAULT_UPLOAD_MAX_SIZE)
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("duplicated upload_max_size"));
-			}
-
-			// here we check if the upload max size is valid
-			// then we store the value
-			std::string result;
-			assign_if_valid(key, value, result, is_max_body_size_valid);
-			location.upload_max_size = ft_atoi(result);
-		}
 	}
 	return location;
 }
@@ -922,22 +871,6 @@ bool is_valid_method(std::string &method)
 		return false;
 	return true;
 }
-
-bool is_upload_directory_valid(std::string &upload_directory)
-{
-	// here we check if the upload directory is valid
-	// if the upload directory is empty we return false
-	if (upload_directory.empty())
-		return false;
-
-	// here we check if the path contains any invalid characters
-	// if it does we return false
-	if (upload_directory.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
-		return false;
-
-	return true;
-}
-
 
 void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
 {
@@ -1025,8 +958,6 @@ Location::Location()
 {
 	// setting up default values
 	directory_listing = false;
-	upload_enabled = false;
-	upload_max_size = DEFAULT_UPLOAD_MAX_SIZE;
 }
 
 Location::~Location()
@@ -1049,9 +980,6 @@ Location& Location::Location::operator=(Location const &obj)
 		methods = obj.methods;
 		redirect_URL = obj.redirect_URL;
 		directory_listing = obj.directory_listing;
-		upload_enabled = obj.upload_enabled;
-		upload_directory = obj.upload_directory;
-		upload_max_size = obj.upload_max_size;
 	}
 	return *this;
 }

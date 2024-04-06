@@ -57,3 +57,5 @@ void print_ascii_header();
 std::string convert_size(size_t size);
 
 std::string extension_to_html_icon(std::string extension);
+
+std::string GenerateUniqueFileName();

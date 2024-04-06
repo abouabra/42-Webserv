@@ -312,7 +312,7 @@ void Server::accept_connection(int socket_fd, int index)
 	}
 
 	// we set the timeout for client
-	client.timeout = time(NULL);
+	client.timeout = std::time(NULL);
 }
 
 int Server::read_from_client(int socket_fd, int index)
@@ -366,7 +366,7 @@ int Server::read_from_client(int socket_fd, int index)
 	}
 
 	// we update the timeout of the client
-	this->clients[index].timeout = time(NULL);
+	this->clients[index].timeout = std::time(NULL);
 
 	// we return the number of bytes read
 	return bytes_read;
@@ -420,6 +420,9 @@ int Server::write_to_client(int socket_fd, int index)
 	// this will mean that we have sent all the data
 	if (this->clients[index].sent_size == response_size)
 	{
+		// log the response
+    	log("Response Sent To: " + clients[index].request_host + ", Status Code: " + itoa(clients[index].response_status_code) + " " + clients[index].status_codes[clients[index].response_status_code], CYAN);
+		
 		// we clear the request and response of the client
 		this->clients[index].request.clear();
 		this->clients[index].response.clear();
@@ -440,7 +443,7 @@ int Server::write_to_client(int socket_fd, int index)
 	}
 
 	// we update the timeout of the client
-	this->clients[index].timeout = time(NULL);
+	this->clients[index].timeout = std::time(NULL);
 
 	// we return the number of bytes sent
 	return bytes_sent;
@@ -452,7 +455,7 @@ int Server::check_for_timeout(Client client, int index)
 	// if the client has been inactive for more than the timeout value, we close the connection
 	
 	// we get the current time
-	time_t current_time = time(NULL);
+	time_t current_time = std::time(NULL);
 
 	// we check if the difference is greater than the timeout value
 	if (current_time - client.timeout >= REQUEST_TIMEOUT)

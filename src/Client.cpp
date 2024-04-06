@@ -3,6 +3,8 @@
 #include <bits/types/time_t.h>
 #include <cstddef>
 #include <cstring>
+#include <fcntl.h>
+#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -18,7 +20,7 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->port = port;
     this->config = config;
     this->sent_size = 0;
-    this->timeout = time(NULL);
+    this->timeout = std::time(NULL);
 
     // initialize status codes
 	this->status_codes[200] = "OK";
@@ -144,8 +146,8 @@ void Client::handle_request()
     // process the request and generate response
     process_request();
 
-	// log the response
-    log("Response Sent To: " + this->request_host + ", Status Code: " + itoa(this->response_status_code) + " " + status_codes[this->response_status_code], CYAN);
+	// // log the response
+    // log("Response Sent To: " + this->request_host + ", Status Code: " + itoa(this->response_status_code) + " " + status_codes[this->response_status_code], CYAN);
 }
 
 void Client::parse_request()
@@ -208,9 +210,14 @@ void Client::parse_request()
             this->cookie = line.substr(8);
     }
 
-    // parse request body    
-    std::getline(ss, this->request_body, '\0');
+	// parse request body
+	// we clear the request body to make sure it is empty
+	this->request_body.clear();
 
+	// we read the request body
+	std::stringstream body_ss;
+	body_ss << ss.rdbuf(); // Move what's inside the stream until EOF to body_ss
+	this->request_body = body_ss.str();
 
     // we log that we have parsed the request
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + this->uri, CYAN);
@@ -233,6 +240,8 @@ void Client::parse_request()
 
 void Client::process_request() {
     // here we process the request and generate the response
+	// std::cout << request << std::endl;
+
 
     // here we have multiple checks if the request is valid
     // if not we send a 4xx response
@@ -256,10 +265,8 @@ void Client::process_request() {
 		return;
 
 	// check what method is used and call the appropriate function
-	if (method == "GET")
-		process_GET(config.locations[location_idx]);
-	else if (method == "POST")
-		process_POST(config.locations[location_idx]);
+	if (method == "GET" || method == "POST")
+		process_GET_and_POST(config.locations[location_idx]);
 	else if (method == "DELETE")
 		process_DELETE(config.locations[location_idx]);
 }
@@ -472,9 +479,15 @@ bool Client::validate_method_for_location(int location_idx)
 	return false;
 }
 
-void Client::process_GET(Location& location)
+void Client::process_GET_and_POST(Location& location)
 {
-	// here we process the GET request
+	// here we process the GET and POST methods
+	// they are processed in the same function because they have the same logic
+	// they differ in CGI script execution
+
+
+
+
 
 	// we get the full path of the resource
 	std::string full_path = construct_resource_path(location);
@@ -809,10 +822,15 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 {
 	// here we execute the CGI script
 
-	// we define the pipe file descriptors and status variable
+	// we define the pipe file descriptors and status variable and filename
 	int pipe_fd[2];
-
 	int status;
+	std::string filename;
+	
+	// we check if the method is POST
+	// if it is we generate a unique file name
+	if(method == "POST")
+		filename = GenerateUniqueFileName();
 
 	// we create the pipe
 	if(pipe(pipe_fd) < 0)
@@ -833,6 +851,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		return;
 	}
 
+
 	// if the fork is the child process
 	if (pid == 0)
 	{
@@ -844,23 +863,48 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		// and we write the request body to the write end of the pipe
 		if(method == "POST")
 		{
-			// we create a pipe
-			int body_pipes[2];
-
-			if (pipe(body_pipes) == -1) {
-				// if the pipe fails we send a 500 response
+			// we create a a temporary file to write the request body
+			// this is done bacause writing to file is waaaay faster than writing to pipe
+			int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+			if(fd < 0)
+			{
+				// if the file fails to open we send a 500 response
 				send_error_response(500);
 				exit(1);
 			}
 
-			// Redirect child's stdin to read end of pipe
-			dup2(body_pipes[0], STDIN_FILENO);
+			// we write the request body to the file
+			int bytes = write(fd, request_body.c_str(), request_body.size());
 
-			// Write request body to write end of pipe
-			write(body_pipes[1], request_body.c_str(), request_body.size());
+			// if the bytes written is less than 0 it means an error occurred
+			// we send a 500 response, close the pipe and return
+			if (bytes < 0)
+			{
+				send_error_response(500);
+				close(pipe_fd[1]);
+				close(fd);
+				return;
+			}
 
-			// Close the unused write end in the child process
-			close(body_pipes[1]);
+			// we close the file
+			close(fd);
+
+
+			// now we re open the file in read only mode
+			fd = open(filename.c_str(), O_RDONLY);
+
+			// if the file fails to open we send a 500 response
+			if(fd < 0)
+			{
+				send_error_response(500);
+				exit(1);
+			}
+
+			// we redirect the stdin to the read end of the fd
+			dup2(fd, STDIN_FILENO);
+
+			// we close the file
+			close(fd);
 		}
 
 		// we redirect the stdout to the write end of the pipe
@@ -881,7 +925,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		close(pipe_fd[1]);
 
 		// we define out starting time
-		time_t start_time = time(NULL);
+		time_t start_time = std::time(NULL);
 
 		// here we check for timeout of the child process
 		while(true)
@@ -894,9 +938,9 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			// result will be the PID of the child process if it has finished
 			if (result > 0)
 				break;
-		
+
 			// we check if the child process has timed out
-			time_t current_time = time(NULL);
+			time_t current_time = std::time(NULL);
 			if (current_time - start_time >= CGI_TIMEOUT)
 			{
 				// if the child process has timed out we kill the child process
@@ -957,6 +1001,12 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		// we close the read end of the pipe
 		close(pipe_fd[0]);
 
+		// we check if the method is POST
+		// if it is we remove the temporary file
+		if(method == "POST")
+			unlink(filename.c_str());
+		
+
 		// we set the raw received response from the CGI script as the response
 		this->response_status_code = 200;
 		this->response = line;
@@ -970,11 +1020,17 @@ void Client::process_POST_CGI(std::string &resource_path)
 	// we get the path of cgi-bin executable
 	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
 
-	// first we need to make environment variables REQUEST_METHOD and CONTENT_TYPE and CONTENT_LENGTH and PATH_INFO to pass to the CGI script
+	// first we need to make environment variables REQUEST_METHOD and CONTENT_TYPE and CONTENT_LENGTH to pass to the CGI script
 	env.push_back("REQUEST_METHOD=POST");
 	env.push_back("CONTENT_TYPE=" + this->content_type);
-	env.push_back("CONTENT_LENGTH=" + this->content_length);
 	env.push_back("PATH_INFO=" + resource_path);
+
+	// here we check should we eathier use the content length or the transfer encoding
+	// this will tell the CGI script if the data is chunked or not this will inform the script how to read the request body
+	if (this->content_length.empty() == true)
+		env.push_back("HTTP_TRANSFER_ENCODING=chunked");
+	else
+		env.push_back("CONTENT_LENGTH=" + this->content_length);
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
@@ -1002,24 +1058,6 @@ void Client::process_POST_CGI(std::string &resource_path)
 	for (size_t i = 0; i < 2; i++)
 		free(argv[i]);
 
-}
-
-
-void Client::process_POST(Location& location)
-{
-	// we get the full path of the resource
-	std::string full_path = construct_resource_path(location);
-
-	// we check if the resource exists
-	// if it fails send a 404 response and return
-	if (verify_resource_existence(full_path) == false)
-		return;
-
-	// we check if the resource is a directory or a file
-	if(is_path_directory(full_path) == true)
-		process_directory(location, full_path);
-	else
-		process_file(full_path);
 }
 
 void Client::process_DELETE(Location& location)
