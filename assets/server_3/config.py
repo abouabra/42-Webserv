@@ -6,7 +6,7 @@ username = "admin"
 plain_password = "admin"
 password_hash = sha256(plain_password.encode()).hexdigest()
 
-def home_page_body(cookie_username):
+def home_page_body(cookie_username, theme):
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -15,6 +15,11 @@ def home_page_body(cookie_username):
             <meta name="viewport" content="width=device-width, initial-scale=1.0" />
             <link rel="icon" href="favicon.ico" />
             <title>Server 3</title>
+            <style>
+                body {{
+                    background-color: {theme == "dark" and "#141615" or "#f0f0f0"};
+                }}
+            </style>
             <link rel="stylesheet" href="style.css" />
         </head>
         <body>
@@ -33,6 +38,15 @@ def home_page_body(cookie_username):
                             role="button"
                             onclick="location.href='/logout/'">
                             Log Out
+                        </button>
+                    </div>
+                    <div class="button-container">
+                        <h3>Here you can switch themes</h3>
+                        <button
+                            class="button"
+                            role="button"
+                            onclick="location.href='/switch/'">
+                            Switch
                         </button>
                     </div>
                 </div>

@@ -498,10 +498,6 @@ void Client::process_GET_and_POST(Location& location)
 	// they are processed in the same function because they have the same logic
 	// they differ in CGI script execution
 
-
-
-
-
 	// we get the full path of the resource
 	std::string full_path = construct_resource_path(location);
 
@@ -834,7 +830,19 @@ void Client::process_GET_CGI(std::string &resource_path)
 	
 	// we need to add the cookie to the environment variables if it exists
 	if(cookie.empty() == false)
-		new_env.push_back("HTTP_COOKIE=" + cookie);
+	{
+		std::stringstream ss(cookie);
+		std::string item;
+		while (std::getline(ss, item, ';'))
+		{
+			item = item[0] == ' ' ? item.substr(1) : item;
+
+			std::string header = item.substr(0, item.find("="));
+			std::string value = item.substr(item.find("=") + 1);
+
+			new_env.push_back("HTTP_COOKIE_" + header + "=" + value);
+		}
+	}
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path

@@ -44,19 +44,33 @@ def is_logged_in(cookies):
 def handle_request(cookies):
     """Handles GET requests for the home page."""
 
-    if is_logged_in(cookies):
-        cookie_username = cookies.split("=")[1].split("-")[0]
-        response_body = home_page_body(cookie_username)
-        return response_body
-    else:
+    cookie_username = ""
+    theme = "dark"
+    for cookie in cookies:
+        if cookie.startswith("auth_session"):
+            if is_logged_in(cookie):
+                cookie_username = cookie.split("=")[1].split("-")[0]
+        if cookie.startswith("theme"):
+            theme = cookie.split("=")[1]
+
+    if not cookie_username:
         print("HTTP/1.1 302 Found\r\nLocation: /login/\r\nContent-Length: 0\r\n\r\n")
         exit(0)
+
+    response_body = home_page_body(cookie_username, theme)
+    return response_body
+
+   
 
 def main():
     """Main function for home.py"""
 
     method = os.environ.get("REQUEST_METHOD", "")
-    cookies = os.environ.get("HTTP_COOKIE", "")
+    cookies = []
+    for item in os.environ:
+        if item.startswith("HTTP_COOKIE"):
+            head = item.replace("HTTP_COOKIE_", "")
+            cookies.append(f"{head}={os.environ[item]}")
 
     if method != 'GET':
         return send_response("405 Method Not Allowed", get_error_body("Method not allowed"))

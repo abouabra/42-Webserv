@@ -17,22 +17,26 @@ def remove_cookie(cookie):
     """Removes the cookie from the client's browser."""
     return f"Set-Cookie: {cookie}; Max-Age=0; path=/"
 
-def handle_request(cookie):
+def handle_request(cookies):
     """Handles the incoming HTTP request."""
 
-    cookie_name, cookie_value = cookie.split("=")
-    if cookie_name != "auth_session":
-        return get_error_body("Invalid cookie")
-    
-    global cookie_header
-    cookie_header = remove_cookie(cookie)
-    return get_logout_body()
+    for cookie in cookies:
+        if cookie.startswith("auth_session"):
+            global cookie_header
+            cookie_header = remove_cookie(cookie)
+            return get_logout_body()
+    return get_error_body("Not logged in")
 
 def main():
     """Main function simulating server behavior."""
 
     method = os.environ.get("REQUEST_METHOD", "")
-    cookies = os.environ.get("HTTP_COOKIE", "")
+    cookies = []
+    for item in os.environ:
+        if item.startswith("HTTP_COOKIE"):
+            head = item.replace("HTTP_COOKIE_", "")
+            cookies.append(f"{head}={os.environ[item]}")
+
     if not cookies:
         return send_response("200 OK", get_error_body("Not logged in"))
 
