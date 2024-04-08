@@ -1,10 +1,10 @@
 import os
 from hashlib import sha256
 from urllib.parse import parse_qs
+import sys
 
-secret_key = "my_super_secret_key_1337"
-username = "admin"
-password_hash = sha256("admin".encode()).hexdigest()
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import secret_key, username, home_page_body, get_error_body
 
 def send_response(code, body):
     """Sends an HTTP response with the provided code and body."""
@@ -45,12 +45,8 @@ def handle_request(cookies):
     """Handles GET requests for the home page."""
 
     if is_logged_in(cookies):
-        username_from_cookie, value, _ = cookies.split("=")[1].split("-")
-        response_body = "<!DOCTYPE html><html><head><title>Home</title></head><body>"
-        response_body += f"<h1>Welcome, {username_from_cookie}!</h1>"
-        response_body += "<a href='/logout/logout.py'>Logout</a>"
-        response_body += "</body></html>"
-
+        cookie_username = cookies.split("=")[1].split("-")[0]
+        response_body = home_page_body(cookie_username)
         return response_body
     else:
         print("HTTP/1.1 302 Found\r\nLocation: /login/\r\nContent-Length: 0\r\n\r\n")
@@ -63,7 +59,7 @@ def main():
     cookies = os.environ.get("HTTP_COOKIE", "")
 
     if method != 'GET':
-        return send_response("405 Method Not Allowed", "<h1>Method not allowed</h1>")
+        return send_response("405 Method Not Allowed", get_error_body("Method not allowed"))
 
     response_body = handle_request(cookies)
 

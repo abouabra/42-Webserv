@@ -1,8 +1,8 @@
-
 import os
+import sys
 
-secret_key = "my_super_secret_key_1337"
-
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import get_logout_body, get_error_body
 cookie_header = ""
 
 def send_response(code, body):
@@ -22,12 +22,11 @@ def handle_request(cookie):
 
     cookie_name, cookie_value = cookie.split("=")
     if cookie_name != "auth_session":
-        return "<h1>Invalid cookie</h1>"
+        return get_error_body("Invalid cookie")
     
     global cookie_header
     cookie_header = remove_cookie(cookie)
-    response_body = "<script>setTimeout(() => { window.location.href = '/login/'; }, 200);</script>"
-    return response_body
+    return get_logout_body()
 
 def main():
     """Main function simulating server behavior."""
@@ -35,10 +34,10 @@ def main():
     method = os.environ.get("REQUEST_METHOD", "")
     cookies = os.environ.get("HTTP_COOKIE", "")
     if not cookies:
-        return send_response("200 OK", "<h1>Not logged in</h1>")
+        return send_response("200 OK", get_error_body("Not logged in"))
 
     if method != 'GET':
-        return send_response("405 Method Not Allowed", "<h1>Method not allowed</h1>")
+        return send_response("405 Method Not Allowed", get_error_body("Method not allowed"))
 
     response_body = handle_request(cookies)
    

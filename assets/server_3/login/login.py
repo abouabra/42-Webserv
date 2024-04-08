@@ -1,12 +1,20 @@
 import os
 from hashlib import sha256
 from urllib.parse import parse_qs
+import sys
 
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from config import secret_key, username, password_hash, get_error_body
 
-secret_key = "my_super_secret_key_1337"
-username = "admin"
-password_hash = sha256("admin".encode()).hexdigest()
 cookie_header = ""
+
+def read_file(file_name):
+    """Reads the content of the provided file."""
+
+    path = os.path.join(os.path.dirname(__file__), file_name)
+    with open(path, "r") as f:
+        return f.read()
+
 
 def send_response(code, body):
     """Sends an HTTP response with the provided code and body."""
@@ -49,17 +57,11 @@ def generate_cookie(username, value):
     return f"auth_session={username}-{value}-{hashed_value}"
 
 
-def handle_request(method):
+def handle_request(method, size):
     """Handles GET and POST requests for login functionality."""
 
     if method == 'GET':
-        response_body = """
-        <form method="post" action="/login/">  Username: <input type="text" name="username" required><br>
-            Password: <input type="password" name="password" required><br>
-            <input type="checkbox" name="remember_me"> Remember me<br>
-            <button type="submit">Login</button>
-        </form>
-        """
+        response_body = read_file("login.html")
         return response_body
 
     elif method == 'POST':
@@ -81,13 +83,14 @@ def handle_request(method):
                 print (f"HTTP/1.1 302 Found\r\nLocation: /\r\nContent-Length: 0\r\n{cookie_header}\r\n\r\n")
                 exit(0)
             else:
-                send_response("401 Unauthorized", "<h1>Invalid credentials</h1>")
+                send_response("401 Unauthorized", get_error_body("Invalid credentials"))
                 exit(0)
         else:
-            send_response("400 Bad Request", "<h1>Invalid form data</h1>")
+            send_response("400 Bad Request", get_error_body("Invalid form data"))
             exit(0)
 
-if __name__ == "__main__":
+
+def main():
     """Main function for login.py"""
 
     method = os.environ.get("REQUEST_METHOD", "")
@@ -98,10 +101,10 @@ if __name__ == "__main__":
         exit(0)
     
     if method != 'GET' and method != 'POST':
-        send_response("405 Method Not Allowed", "<h1>Method not allowed</h1>")
+        send_response("405 Method Not Allowed", get_error_body("Method not allowed"))
         exit(0)
 
-    response_body = handle_request(method)
+    response_body = handle_request(method, size)
 
     print("HTTP/1.1 200 OK\r\n", end="")
     print("Content-Type: text/html\r\n", end="")
@@ -110,3 +113,7 @@ if __name__ == "__main__":
         print(cookie_header + "\r\n", end="")
     print("\r\n", end="")
     print(response_body)
+
+
+if __name__ == "__main__":
+    main()

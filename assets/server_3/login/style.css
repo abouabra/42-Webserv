@@ -2,21 +2,21 @@
 	font-family: "FuturaPT";
 	font-style: normal;
 	font-weight: normal;
-	src: url("fonts/ParaType-FuturaPTBook.otf") format("opentype");
+	src: url("/login/fonts/ParaType-FuturaPTBook.otf") format("opentype");
   }
   
   @font-face {
 	font-family: "FuturaPT";
 	font-style: italic;
 	font-weight: normal;
-	src: url("fonts/ParaType-FuturaPTBookOblique.ttf") format("truetype");
+	src: url("/login/fonts/ParaType-FuturaPTBookOblique.ttf") format("truetype");
   }
   
   @font-face {
 	font-family: "FuturaPT";
 	font-style: normal;
 	font-weight: bold;
-	src: url("fonts/ParaType-FuturaPTHeavy.otf") format("opentype");
+	src: url("/login/fonts/ParaType-FuturaPTHeavy.otf") format("opentype");
   }
   
   :root {
@@ -28,7 +28,7 @@
 	display: flex;
 	justify-content: center;
 	align-items: center;
-	background: url('pics/bg_login.jpeg') no-repeat center fixed;
+	background: url('/login/pics/bg_login.jpeg') no-repeat center fixed;
 	background-size: cover;
   }
 
