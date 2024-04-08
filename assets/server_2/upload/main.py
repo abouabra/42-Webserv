@@ -1,6 +1,8 @@
 import os
 import re
 import sys
+UPLOAD_DIR = "upload_dir" # Directory to store uploaded files
+
 
 def parse_filename(content):
     # search for the filename
@@ -8,8 +10,7 @@ def parse_filename(content):
     match = re.search(filename_pattern, content, re.IGNORECASE)
     return match.group(1).strip() if match else ""
 
-def handle_upload(request_body):
-    upload_dir = "upload_dir"  # Modify this to your desired upload directory
+def handle_upload_for_normal_upload(request_body):
     boundary = os.environ.get("CONTENT_TYPE", "").split("boundary=")[-1]
 
     if not boundary:
@@ -28,7 +29,7 @@ def handle_upload(request_body):
         if not script_path:
             return "<h1>Error: Could not determine script path</h1>"
         script_path = script_path.rsplit("/", 1)[0]
-        file_path = os.path.join(script_path, upload_dir, filename)
+        file_path = os.path.join(script_path, UPLOAD_DIR, filename)
 
         try:
             with open(file_path, "wb") as f:
@@ -40,22 +41,39 @@ def handle_upload(request_body):
 
     return "<h1>No file found in upload data</h1>"
 
+
+def handle_upload_for_chunked_upload(request_body):
+   return "<h1>Chunked upload is not supported yet</h1>"
+
 def main():
     method = os.environ.get("REQUEST_METHOD", "")
     if method != "POST":
         exit(1)
+    
+    content_length = os.environ.get("CONTENT_LENGTH", "")
+    transfer_encoding = os.environ.get("HTTP_TRANSFER_ENCODING", "")
+    if not content_length and transfer_encoding != "chunked":
+        print("HTTP/1.1 400 Bad Request\r\nContent-Type: text/plain\r\n\r\nError: Invalid request")
+        exit(0)
+        
+    
 
     # Read the entire request body
     try:
         request_body = sys.stdin.buffer.read()
     except Exception as e:
-        print(f"Error reading request body: {str(e)}", file=sys.stderr)
         exit(1)
+
+    # print(request_body, file=sys.stderr)
 
     response_body = "<!DOCTYPE html><html><head><title>Upload</title><meta charset=\"UTF-8\" />"
     response_body += "<style>body { font-family: sans-serif; background-color: #141615; color: #317aed; font-size: 2em; text-align: center; }</style>"
     response_body += "</head><body>"
-    response_body += handle_upload(request_body)
+    if content_length:
+        response_body += handle_upload_for_normal_upload(request_body)
+    else:
+        response_body += handle_upload_for_chunked_upload(request_body)
+
     response_body += "</body></html>"
 
     # Generate HTTP response headers
@@ -67,3 +85,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+# curl -X POST \
+#      -H "Transfer-Encoding: chunked" \
+#      -F "file=@/home/ayman/Videos/video.zip" \
+#      http://0.0.0.0:2004/upload/main.py
+
+
+# curl -X POST \
+#      -H "Transfer-Encoding: chunked" \
+#      -H "Content-Type: application/octet-stream" \
+#      --data-binary @/home/ayman/Documents/42/backserve/Makefile \
+#      http://0.0.0.0:2004/upload/main.py

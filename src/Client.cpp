@@ -152,6 +152,18 @@ void Client::parse_request()
     std::stringstream ss(request);
     std::string line;
 
+	// we clear the request parameters to make sure they are empty
+	this->method.clear();
+	this->uri.clear();
+	this->protocol.clear();
+	this->request_host.clear();
+	this->connection.clear();
+	this->content_length.clear();
+	this->content_type.clear();
+	this->transfer_encoding.clear();
+	this->request_query_string.clear();
+	this->cookie.clear();
+
     // here we loop through the request line by line
     // and parse the request header
     while(std::getline(ss, line)) {
@@ -808,10 +820,21 @@ void Client::process_GET_CGI(std::string &resource_path)
 	// we get the path of cgi-bin executable
 	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
 	
+	// we make a new vector to hold the environment variables
+	std::vector<std::string> new_env;
+	
+	// we make new so that we can add the new environment variables and dont affect the original environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		new_env.push_back(env[i]);
+
 	// first we need to make environment variables QUERY_STRING and REQUEST_METHOD and PATH_INFO to pass to the CGI script
-	env.push_back("QUERY_STRING=" + request_query_string);
-	env.push_back("REQUEST_METHOD=GET");
-	env.push_back("PATH_INFO=" + resource_path);
+	new_env.push_back("QUERY_STRING=" + request_query_string);
+	new_env.push_back("REQUEST_METHOD=GET");
+	new_env.push_back("PATH_INFO=" + resource_path);
+	
+	// we need to add the cookie to the environment variables if it exists
+	if(cookie.empty() == false)
+		new_env.push_back("HTTP_COOKIE=" + cookie);
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
@@ -820,10 +843,10 @@ void Client::process_GET_CGI(std::string &resource_path)
 					NULL};
 
 	// we need to make a new char **envp
-	char *envp[env.size() + 1];
-	for (size_t i = 0; i < env.size(); i++)
-		envp[i] = my_strdup(env[i]);
-	envp[env.size()] = NULL;
+	char *envp[new_env.size() + 1];
+	for (size_t i = 0; i < new_env.size(); i++)
+		envp[i] = my_strdup(new_env[i]);
+	envp[new_env.size()] = NULL;
 
 	// we execute the CGI script
 	execute_CGI(executable_path.c_str(), argv, envp);
@@ -1042,17 +1065,28 @@ void Client::process_POST_CGI(std::string &resource_path)
 	// we get the path of cgi-bin executable
 	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
 
-	// first we need to make environment variables REQUEST_METHOD and CONTENT_TYPE and CONTENT_LENGTH to pass to the CGI script
-	env.push_back("REQUEST_METHOD=POST");
-	env.push_back("CONTENT_TYPE=" + this->content_type);
-	env.push_back("PATH_INFO=" + resource_path);
+	// we make a new vector to hold the environment variables
+	std::vector<std::string> new_env;
+	
+	// we make new so that we can add the new environment variables and dont affect the original environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		new_env.push_back(env[i]);
+
+	// then we have to make environment variables REQUEST_METHOD and CONTENT_TYPE and CONTENT_LENGTH to pass to the CGI script
+	new_env.push_back("REQUEST_METHOD=POST");
+	new_env.push_back("CONTENT_TYPE=" + this->content_type);
+	new_env.push_back("PATH_INFO=" + resource_path);
 
 	// here we check should we eathier use the content length or the transfer encoding
 	// this will tell the CGI script if the data is chunked or not this will inform the script how to read the request body
 	if (this->content_length.empty() == true)
-		env.push_back("HTTP_TRANSFER_ENCODING=chunked");
+		new_env.push_back("HTTP_TRANSFER_ENCODING=chunked");
 	else
-		env.push_back("CONTENT_LENGTH=" + this->content_length);
+		new_env.push_back("CONTENT_LENGTH=" + this->content_length);
+
+	// we need to add the cookie to the environment variables if it exists
+	if(cookie.empty() == false)
+		new_env.push_back("HTTP_COOKIE=" + cookie);
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
@@ -1062,10 +1096,10 @@ void Client::process_POST_CGI(std::string &resource_path)
 
 
 	// we need to make a new char **envp
-	char *envp[env.size() + 1];
-	for (size_t i = 0; i < env.size(); i++)
-		envp[i] = my_strdup(env[i]);
-	envp[env.size()] = NULL;
+	char *envp[new_env.size() + 1];
+	for (size_t i = 0; i < new_env.size(); i++)
+		envp[i] = my_strdup(new_env[i]);
+	envp[new_env.size()] = NULL;
 
 	// we execute the CGI script
 	execute_CGI(executable_path.c_str(), argv, envp);

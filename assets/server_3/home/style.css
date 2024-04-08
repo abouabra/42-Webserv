@@ -1,6 +1,6 @@
+
 :root {
-    --primary-color: #317aed;
-    --secondary-color: #141615;
+    --main-color: #31ED43;;
 }
 
 body {
@@ -9,7 +9,7 @@ body {
     display: flex;
     min-height: 100vh;
     font-family: sans-serif;
-    background-color: var(--secondary-color);
+    background-color: #141615;
 }
 
 .container {
@@ -19,7 +19,7 @@ body {
     width: 100vw;
 }
 
-.right-side {
+.left-side {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -29,9 +29,9 @@ body {
     color: #333;
 }
 
-.left-side {
+.right-side {
     flex: 1;
-    background-image: url(/img-1.png);
+    background-image: url(./img-1.png);
     background-size: cover;
     background-position: center;
 }
@@ -40,33 +40,19 @@ h1 {
     font-size: 3em;
     text-align: center;
     margin-top: 0;
-    color: var(--primary-color);
+    color: var(--main-color);
 }
 
 h2 {
     font-size: 1.5em;
     margin-bottom: 1em;
     text-align: center;
-    color: var(--primary-color);
+    color: var(--main-color);
 }
 
-.button-container {
-    display: flex;
-    justify-content: space-around;
-    width: 100%;
-}
-
-.form {
-    display: flex;
-    flex-direction: column;
+.button {
     align-items: center;
-    width: 100%;
-}
-
-.input {
-    margin: 5px;
-    align-items: center;
-    background-color: var(--primary-color);
+    background-color: var(--main-color);
     color: #141615;
     border: 0;
     border-radius: 8px;
@@ -78,7 +64,7 @@ h2 {
     line-height: 1em;
     font-weight: bold;
     max-width: 100%;
-    min-width: 450px;
+    min-width: 140px;
     padding: 19px 24px;
     text-decoration: none;
     user-select: none;
@@ -87,9 +73,25 @@ h2 {
     white-space: nowrap;
     cursor: pointer;
 }
-.input::placeholder {
-    color: #141615;
+
+.button:active,
+.button:hover {
+    outline: 0;
 }
+
+@media (min-width: 768px) {
+    .button {
+        font-size: 24px;
+        min-width: 196px;
+    }
+}
+
+.button-container {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+}
+
 
 .context {
     width: 100%;
@@ -100,5 +102,11 @@ h2 {
 .context h1 {
     text-align: center;
     color: #fff;
-    font-size: 50px;
+}
+
+.paragraph {
+    text-align: center;
+    margin-top: 0;
+    color: var(--main-color);
+    font-size: 3.7em;
 }

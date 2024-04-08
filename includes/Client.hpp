@@ -17,19 +17,18 @@ public:
     ~Client();
     Client &operator=(Client const &obj);
 
+    ServerConfig config;
+    std::vector<std::string> env;
+
+    // client variables
     int socket_fd;
     int host;
     int port;
 
-    ServerConfig config;
-    std::vector<std::string> env;
 
 
-    size_t sent_size;
-    time_t timeout;
 
-
-    // Request Parameters
+    // Request variables
     std::string request;
     std::string method;
     std::string uri;
@@ -42,13 +41,15 @@ public:
     std::string cookie;
     std::string request_body;
     std::string request_query_string;
+    time_t timeout;
 
-    // Response Parameters
+    // Response variables
     int response_status_code;
     std::string response_connection;
     std::string response_content_type;
     std::string response_body;
     std::string response;
+    size_t sent_size;
 
     // maps for status codes and mime types
     std::map<int, std::string> status_codes;

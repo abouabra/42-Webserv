@@ -1,10 +1,15 @@
+:root {
+    --primary-color: #ed4331;
+    --secondary-color: #141615;
+}
+
 body {
     margin: 0;
     padding: 0;
     display: flex;
     min-height: 100vh;
     font-family: sans-serif;
-    background-color: #141615;
+    background-color: var(--secondary-color);
 }
 
 .container {
@@ -26,7 +31,7 @@ body {
 
 .right-side {
     flex: 1;
-    background-image: url(./img-1.png);
+    background-image: url(/img-1.png);
     background-size: cover;
     background-position: center;
 }
@@ -35,19 +40,19 @@ h1 {
     font-size: 3em;
     text-align: center;
     margin-top: 0;
-    color: #ed4331;
+    color: var(--primary-color);
 }
 
 h2 {
     font-size: 1.5em;
     margin-bottom: 1em;
     text-align: center;
-    color: #ed4331;
+    color: var(--primary-color);
 }
 
 .button {
     align-items: center;
-    background-color: #ed4331;
+    background-color: var(--primary-color);
     color: #141615;
     border: 0;
     border-radius: 8px;
