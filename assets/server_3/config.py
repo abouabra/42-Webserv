@@ -41,7 +41,7 @@ def home_page_body(cookie_username, theme):
                         </button>
                     </div>
                     <div class="button-container">
-                        <h3>Here you can switch themes</h3>
+                        <h3>Here you can switch theme</h3>
                         <button
                             class="button"
                             role="button"

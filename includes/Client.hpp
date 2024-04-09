@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <cstdio>
 
 #define CGI_TIMEOUT 60
 
@@ -90,4 +91,13 @@ public:
     void process_GET_CGI(std::string &resource_path);
     void process_POST_CGI(std::string &resource_path);
     void execute_CGI(const char *path, char *argv[], char *envp[]);
+
+    void process_directory_for_DELETE(Location& location, std::string &resource_path);
+    void process_file_for_DELETE(std::string resource_path);
+    void process_DELETE_CGI(std::string &resource_path);
+
+    void delete_file(std::string &resource_path);
+
+    int recursive_deletion(std::string path);
+
 };

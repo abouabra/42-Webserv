@@ -791,11 +791,21 @@ void Client::serve_static_content(std::string &resource_path)
 		extension = "txt";
 	}
 
+	// we read the file
+	std::string data = read_file(resource_path);
+
+	// if the file is empty we send a 500 response
+	if (data.empty())
+	{
+		send_error_response(500);
+		return;
+	}
+
 	// we read the file and send it as the response
 	this->set_status_code(200)
 		.set_content_type(mime_types[extension])
 		.set_connection(connection)
-		.set_body(read_file(resource_path))
+		.set_body(data)
 		.build_response();
 }
 
@@ -806,7 +816,8 @@ void Client::serve_dynamic_content(std::string &resource_path)
 		process_GET_CGI(resource_path);
 	else if (method == "POST")
 		process_POST_CGI(resource_path);
-
+	else if (method == "DELETE")
+		process_DELETE_CGI(resource_path);
 }
 
 void Client::process_GET_CGI(std::string &resource_path)
@@ -1057,7 +1068,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		// we check if the method is POST
 		// if it is we remove the temporary file
 		if(method == "POST")
-			unlink(filename.c_str());
+			std::remove(filename.c_str());
 		
 
 		// we set the raw received response from the CGI script as the response
@@ -1126,15 +1137,223 @@ void Client::process_POST_CGI(std::string &resource_path)
 
 void Client::process_DELETE(Location& location)
 {
-	(void) location;
+	// here we process the DELETE method
 
+	// we get the full path of the resource
+	std::string full_path = construct_resource_path(location);
 
+	// we check if the resource exists
+	// if it fails send a 404 response and return
+	if (verify_resource_existence(full_path) == false)
+		return;
 
+	// we check if the resource is a directory or a file
+	if(is_path_directory(full_path) == true)
+		process_directory_for_DELETE(location, full_path);
+	else
+		process_file_for_DELETE(full_path);
+}
 
-	// we send a test response
-    this->set_status_code(200)
-        .set_content_type("text/html")
-        .set_connection(this->connection)
-        .set_body("Hello from DELETE")
-        .build_response();
+void Client::process_directory_for_DELETE(Location& location, std::string &full_path)
+{
+	// here we process the directory for the DELETE method
+
+	// we check if the uri has a doesnt have a trailing slash
+	// if so we send 400 conflict response
+	if (uri[uri.size() - 1] != '/')
+	{
+		send_error_response(400);
+		return;
+	}
+
+	// we check if the index file is defined in the location
+	// and if it exists in the directory and if it is a dynamic file
+	// if all requirements are met we serve the cgi index file
+	// if not we send a 403 response
+	if(location.index.empty() == false && access((full_path + location.index).c_str(), F_OK) != -1)
+	{
+		std::string new_path = full_path + location.index;
+		if(should_be_processed_by_cgi(new_path) == true)
+			serve_dynamic_content(new_path);
+		else
+			send_error_response(403);
+		return;
+	}
+
+	// here we try to delete the directory
+	if(recursive_deletion(full_path) != 0)
+	{
+		// if it fails we check why it failed
+		// we check if its because write access on the folder
+		// if it is we send a 500 response
+		// otherwise we send a 403 response
+		if(access(full_path.c_str(), W_OK) == 0)
+			send_error_response(500);
+		else
+			send_error_response(403);
+		return;
+	}
+
+	// if the folder is deleted we send a 204 response
+	// because the folder is deleted and there is no content to send
+	this->set_status_code(204)
+		.set_connection(this->connection)
+		.set_body("")
+		.build_response();
+}
+
+void Client::process_file_for_DELETE(std::string resource_path)
+{
+	// here we process the file for the DELETE method
+	// check if the file is static file or dynamic file
+	if(should_be_processed_by_cgi(resource_path) == true)
+		serve_dynamic_content(resource_path);
+	else
+		delete_file(resource_path);
+}
+
+void Client::process_DELETE_CGI(std::string &resource_path)
+{
+	// here we run the CGI script for the DELETE method
+
+	// we get the path of cgi-bin executable
+	std::string executable_path = this->config.cgi[resource_path.substr(resource_path.find_last_of("."))].c_str();
+	
+	// we make a new vector to hold the environment variables
+	std::vector<std::string> new_env;
+	
+	// we make new so that we can add the new environment variables and dont affect the original environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		new_env.push_back(env[i]);
+
+	// first we need to make environment variables QUERY_STRING and REQUEST_METHOD and PATH_INFO to pass to the CGI script
+	new_env.push_back("QUERY_STRING=" + request_query_string);
+	new_env.push_back("REQUEST_METHOD=DELETE");
+	new_env.push_back("PATH_INFO=" + resource_path);
+	
+	// we need to add the cookie to the environment variables if it exists
+	if(cookie.empty() == false)
+	{
+		std::stringstream ss(cookie);
+		std::string item;
+		while (std::getline(ss, item, ';'))
+		{
+			item = item[0] == ' ' ? item.substr(1) : item;
+
+			std::string header = item.substr(0, item.find("="));
+			std::string value = item.substr(item.find("=") + 1);
+
+			new_env.push_back("HTTP_COOKIE_" + header + "=" + value);
+		}
+	}
+
+	// we need to make a new char **argv
+	// we need to add the executable path and the resource path
+	char *argv[] = {my_strdup(executable_path), 
+					my_strdup(resource_path),
+					NULL};
+
+	// we need to make a new char **envp
+	char *envp[new_env.size() + 1];
+	for (size_t i = 0; i < new_env.size(); i++)
+		envp[i] = my_strdup(new_env[i]);
+	envp[new_env.size()] = NULL;
+
+	// we execute the CGI script
+	execute_CGI(executable_path.c_str(), argv, envp);
+
+	// we free the memory
+
+	// we free the memory allocated for the environment variables
+	for (size_t i = 0; i < env.size(); i++)
+		free(envp[i]);
+
+	// we free the memory allocated for the argv
+	for (size_t i = 0; i < 2; i++)
+		free(argv[i]);
+
+}
+
+void Client::delete_file(std::string &resource_path)
+{
+	// here we delete the file
+
+	// we try to delete
+	if (std::remove(resource_path.c_str()) != 0)
+	{
+		// if the file is not deleted we send a 500 response
+		send_error_response(500);
+		return;
+	}
+
+	// if the file is deleted we send a 204 response
+	// because the file is deleted and there is no content to send
+	this->set_status_code(204)
+		.set_connection(this->connection)
+		.set_body("")
+		.build_response();
+}
+
+int Client::recursive_deletion(std::string path)
+{
+	// here we recursively delete the directory
+
+	// we define the directory pointer and the directory entry
+	DIR *dir;
+	struct dirent *entry;
+
+	// we open the directory
+	dir = opendir(path.c_str());
+
+	// we check if the directory is opened
+	if (dir == NULL)
+	{
+		// if the directory is not opened we return -1
+		return -1;
+	}
+
+	// we loop through the directory entries
+	while ((entry = readdir(dir)))
+	{
+		// we skip the current directory and the parent directory
+		std::string name = entry->d_name;
+		if (name == "." || name == "..")
+			continue;
+
+		// we get the full path of the entry
+		std::string full_path = path + "/" + entry->d_name;
+
+		// we check if the entry is a directory
+		if (entry->d_type == DT_DIR)
+		{
+			// we recursively delete the directory
+			if (recursive_deletion(full_path) != 0)
+			{
+				// if the directory is not deleted we return -1
+				return -1;
+			}
+		}
+		// if the entry is a file we delete the file
+		else
+		{
+			if(std::remove(full_path.c_str()) != 0)
+			{
+				// if the file is not deleted we return -1
+				return -1;
+			}
+		}
+	}
+
+	// we close the directory
+	closedir(dir);
+
+	// we delete the directory
+	if (std::remove(path.c_str()) != 0)
+	{
+		// if the directory is not deleted we return -1
+		return -1;
+	}
+
+	// we return 0 to indicate success
+	return 0;
 }
