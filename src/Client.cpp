@@ -874,12 +874,11 @@ void Client::process_GET_CGI(std::string &resource_path)
 
 	// we free the memory allocated for the environment variables
 	for (size_t i = 0; i < env.size(); i++)
-		free(envp[i]);
+		delete envp[i];
 
 	// we free the memory allocated for the argv
 	for (size_t i = 0; i < 2; i++)
-		free(argv[i]);
-
+		delete argv[i];
 }
 
 void Client::execute_CGI(const char *path, char *argv[], char *envp[])
@@ -1127,11 +1126,11 @@ void Client::process_POST_CGI(std::string &resource_path)
 
 	// we free the memory allocated for the environment variables
 	for (size_t i = 0; i < env.size(); i++)
-		free(envp[i]);
+		delete envp[i];
 
 	// we free the memory allocated for the argv
 	for (size_t i = 0; i < 2; i++)
-		free(argv[i]);
+		delete argv[i];
 
 }
 
@@ -1266,11 +1265,11 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 
 	// we free the memory allocated for the environment variables
 	for (size_t i = 0; i < env.size(); i++)
-		free(envp[i]);
+		delete envp[i];
 
 	// we free the memory allocated for the argv
 	for (size_t i = 0; i < 2; i++)
-		free(argv[i]);
+		delete argv[i];
 
 }
 
