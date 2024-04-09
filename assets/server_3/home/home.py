@@ -77,11 +77,8 @@ def main():
 
     response_body = handle_request(cookies)
 
-    print("HTTP/1.1 200 OK\r\n", end="")
-    print("Content-Type: text/html\r\n", end="")
-    print("Content-Length: " + str(len(response_body)) + "\r\n", end="")
-    print("\r\n", end="")
-    print(response_body)
+    send_response("200 OK", response_body)
+
 
 if __name__ == "__main__":
     main()

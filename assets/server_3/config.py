@@ -61,6 +61,7 @@ def get_error_body(error_line):
         <!DOCTYPE html>
         <html>
             <head>
+                <meta charset="UTF-8" />
                 <title>Error</title>
                 <link rel="stylesheet" href="/style.css" />
             </head>
@@ -78,6 +79,7 @@ def get_logout_body():
         <!DOCTYPE html>
         <html>
             <head>
+                <meta charset="UTF-8" />
                 <title>Logout</title>
                 <link rel="stylesheet" href="/style.css" />
             </head>
@@ -97,6 +99,7 @@ def main():
     <!DOCTYPE html>
     <html>
         <head>
+            <meta charset="UTF-8" />
             <title>Forbidden</title>
         </head>
         <body>

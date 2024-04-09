@@ -18,6 +18,7 @@ def get_error_body(error_line):
         <!DOCTYPE html>
         <html>
             <head>
+                <meta charset="UTF-8" />
                 <title>Error</title>
                 <link rel="stylesheet" href="/cgi/delete_cgi/style.css" />
             </head>
@@ -35,6 +36,7 @@ def get_main_body(line):
         <!DOCTYPE html>
         <html>
             <head>
+                <meta charset="UTF-8" />
                 <title>DELETE CGI</title>
                 <link rel="stylesheet" href="/cgi/delete_cgi/style.css" />
             </head>
@@ -71,12 +73,7 @@ def main():
         return send_response("405 Method Not Allowed", get_error_body("Method not allowed"))
 
     response_body = handle_request(method)
-
-    print("HTTP/1.1 200 OK\r\n", end="")
-    print("Content-Type: text/html\r\n", end="")
-    print("Content-Length: " + str(len(response_body)) + "\r\n", end="")
-    print("\r\n", end="")
-    print(response_body)
+    send_response("200 OK", response_body)
 
 if __name__ == "__main__":
     main()

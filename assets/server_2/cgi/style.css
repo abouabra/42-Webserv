@@ -102,3 +102,25 @@ h2 {
     color: #fff;
     font-size: 50px;
 }
+
+
+.error_page {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    width: 100vw;
+    background-color: #141615;
+    color: #fff;
+    font-size: 1.5em;
+    font-family: sans-serif;
+}
+
+
+.error_line {
+    font-size: 4em;
+    text-align: center;
+    margin-top: 0;
+    color:  #ed3131;
+}
