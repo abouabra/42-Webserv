@@ -9,7 +9,7 @@ void log(std::string message, int color)
 
 	current = std::time(NULL);
 	std::memset(buffer, 0, sizeof(buffer));
-	strftime(buffer, 100, "[%Y-%m-%d %H:%M:%S]", localtime(&current));
+	std::strftime(buffer, 100, "[%Y-%m-%d %H:%M:%S]", localtime(&current));
 
 
 	std::map<int, std::string> log_colors;

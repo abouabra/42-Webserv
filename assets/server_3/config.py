@@ -112,6 +112,7 @@ def main():
     print(f"HTTP/1.1 403 Forbidden\r\n", end="")
     print("Content-Type: text/html\r\n", end="")
     print(f"Content-Length: {len(response_body)}\r\n", end="")
+    print("Connection: keep-alive\r\n", end="")
     print("\r\n", end="")
     print(response_body, end="")
 

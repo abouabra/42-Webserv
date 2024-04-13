@@ -9,6 +9,7 @@ def send_response(code, body):
     print(f"HTTP/1.1 {code}\r\n", end="")
     print("Content-Type: text/html\r\n", end="")
     print(f"Content-Length: {len(body)}\r\n", end="")
+    print("Connection: keep-alive\r\n", end="")
     print("\r\n", end="")
     print(body, end="")
 
@@ -46,6 +47,7 @@ def main():
     print("HTTP/1.1 302 Found\r\n", end="")
     print("Location: /\r\n", end="")
     print("Content-Length: 0\r\n", end="")
+    print("Connection: keep-alive\r\n", end="")
     print(cookie_header + "\r\n", end="")
     print("\r\n", end="")
 

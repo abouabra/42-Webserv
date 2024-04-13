@@ -40,6 +40,7 @@ function send_response() {
 HTTP/1.1 $code
 Content-Type: text/html
 Content-Length: $len
+Connection: keep-alive
 
 $body
 EOF

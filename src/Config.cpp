@@ -722,6 +722,7 @@ void Config::print_config()
 			
 			std::cout << "\t\tRedirect url: " << servers[i].locations[j].redirect_URL << std::endl;
 			std::cout << "\t\tDirectory listing: " << servers[i].locations[j].directory_listing << std::endl;
+			std::cout << "\t\tUpload path: " << servers[i].locations[j].upload_dir << std::endl;
 		}
 	}
 }
@@ -853,6 +854,18 @@ Location parse_server_location(std::stringstream &ss)
 				throw(std::runtime_error("Invalid config directory_listing"));
 			}
 		}
+		else if (key == "upload_dir:")
+		{
+			// check duplicate
+			if (location.upload_dir.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated upload_directory"));
+			}
+
+			// here we check if the upload directory is valid
+			assign_if_valid(key, value, location.upload_dir, is_root_valid);
+		}
 	}
 	return location;
 }
@@ -980,6 +993,7 @@ Location& Location::Location::operator=(Location const &obj)
 		methods = obj.methods;
 		redirect_URL = obj.redirect_URL;
 		directory_listing = obj.directory_listing;
+		upload_dir = obj.upload_dir;
 	}
 	return *this;
 }

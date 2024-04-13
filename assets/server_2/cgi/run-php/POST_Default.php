@@ -30,7 +30,9 @@ EOF;
 function send_response($code, $body) {
     echo "HTTP/1.1 $code\r\n";
     echo "Content-Type: text/html\r\n";
-    echo "Content-Length: " . strlen($body) . "\r\n\r\n";
+    echo "Content-Length: " . strlen($body) . "\r\n";
+    echo "Connection: keep-alive\r\n";
+    echo "\r\n";
     echo $body;
 }
 

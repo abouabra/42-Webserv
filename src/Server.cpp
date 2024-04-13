@@ -89,7 +89,7 @@ void Server::init() {
 		}
 
 		// we log that the server has started
-		log("Server started on: " + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), WHITE);
+		log("Server started on: http://" + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), WHITE);
 	}
 
 	server_loop();
@@ -355,14 +355,19 @@ int Server::read_from_client(int socket_fd, int index)
 
 	// we check if the bytes_read is less than the buffer size
 	// this will mean that we have read all the data
+	// so we process the request
 	if (bytes_read < BUFFER_SIZE)
 	{
-		// we process the request
-		// this function will parse and process the request then generate a response
-		this->clients[index].handle_request();
+		// std::cout << "called" << std::endl;
+		if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
+		{
+			// we process the request
+			// this function will parse and process the request then generate a response
+			this->clients[index].handle_request();
 
-		// we add the socket to the writes fd_set
-		FD_SET(socket_fd, &this->writes);
+			// we add the socket to the writes fd_set
+			FD_SET(socket_fd, &this->writes);
+		}
 	}
 
 	// we update the timeout of the client

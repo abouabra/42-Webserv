@@ -19,6 +19,7 @@ public:
 	std::vector<std::string> methods;
 	std::string redirect_URL;
 	bool directory_listing;
+	std::string upload_dir;
 
 	Location();
 	~Location();

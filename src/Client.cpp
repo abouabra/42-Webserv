@@ -140,8 +140,12 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
+	// std::cout << request.substr(0, 500) << std::endl;
+
     // parse and extract request parameters
     parse_request();
+
+	// std::cout << "body size after parse_request(): " << request_body.size() << std::endl; 
 
     // process the request and generate response
     process_request();
@@ -510,7 +514,7 @@ void Client::process_GET_and_POST(Location& location)
 	if(is_path_directory(full_path) == true)
 		process_directory(location, full_path);
 	else
-		process_file(full_path);
+		process_file(full_path, location);
 
 }
 
@@ -587,7 +591,7 @@ void Client::process_directory(Location& location, std::string full_path)
 	if(location.index.empty() == false && access((full_path + location.index).c_str(), F_OK) != -1)
 	{
 		// process the file
-		process_file(full_path + location.index);
+		process_file(full_path + location.index, location);
 		return;
 	}
 
@@ -679,7 +683,7 @@ void Client::serve_directory_listing(std::string &resource_path)
 			// we get the file size then convert it to human readable format
 			std::time_t mtime = file_stat.st_mtime;
 			std::tm* mod_time = std::localtime(&mtime);
-			strftime(time_str, sizeof(time_str), "%d/%m/%Y %H:%M:%S", mod_time);
+			std::strftime(time_str, sizeof(time_str), "%d/%m/%Y %H:%M:%S", mod_time);
 
 			// we get the file extension
 			std::string extension;
@@ -741,11 +745,11 @@ void Client::serve_directory_listing(std::string &resource_path)
 		.build_response();
 }
 
-void Client::process_file(std::string resource_path)
+void Client::process_file(std::string resource_path, Location& location)
 {
 	// check if the file is static file or dynamic file
 	if(should_be_processed_by_cgi(resource_path) == true)
-		serve_dynamic_content(resource_path);
+		serve_dynamic_content(resource_path, location);
 	else
 		serve_static_content(resource_path);
 }
@@ -809,13 +813,13 @@ void Client::serve_static_content(std::string &resource_path)
 		.build_response();
 }
 
-void Client::serve_dynamic_content(std::string &resource_path)
+void Client::serve_dynamic_content(std::string &resource_path, Location& location)
 {
 	// we check what method is used and call the appropriate function
 	if(method == "GET")
 		process_GET_CGI(resource_path);
 	else if (method == "POST")
-		process_POST_CGI(resource_path);
+		process_POST_CGI(resource_path, location);
 	else if (method == "DELETE")
 		process_DELETE_CGI(resource_path);
 }
@@ -1076,7 +1080,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 	}
 }
 
-void Client::process_POST_CGI(std::string &resource_path)
+void Client::process_POST_CGI(std::string &resource_path, Location& location)
 {
 	// here we run the CGI script for the POST method
 
@@ -1094,13 +1098,8 @@ void Client::process_POST_CGI(std::string &resource_path)
 	new_env.push_back("REQUEST_METHOD=POST");
 	new_env.push_back("CONTENT_TYPE=" + this->content_type);
 	new_env.push_back("PATH_INFO=" + resource_path);
-
-	// here we check should we eathier use the content length or the transfer encoding
-	// this will tell the CGI script if the data is chunked or not this will inform the script how to read the request body
-	if (this->content_length.empty() == true)
-		new_env.push_back("HTTP_TRANSFER_ENCODING=chunked");
-	else
-		new_env.push_back("CONTENT_LENGTH=" + this->content_length);
+	new_env.push_back("CONTENT_LENGTH=" + this->content_length);
+	new_env.push_back("UPLOAD_DIR=" + location.upload_dir);
 
 	// we need to add the cookie to the environment variables if it exists
 	if(cookie.empty() == false)
@@ -1150,7 +1149,7 @@ void Client::process_DELETE(Location& location)
 	if(is_path_directory(full_path) == true)
 		process_directory_for_DELETE(location, full_path);
 	else
-		process_file_for_DELETE(full_path);
+		process_file_for_DELETE(full_path, location);
 }
 
 void Client::process_directory_for_DELETE(Location& location, std::string &full_path)
@@ -1173,7 +1172,7 @@ void Client::process_directory_for_DELETE(Location& location, std::string &full_
 	{
 		std::string new_path = full_path + location.index;
 		if(should_be_processed_by_cgi(new_path) == true)
-			serve_dynamic_content(new_path);
+			serve_dynamic_content(new_path, location);
 		else
 			send_error_response(403);
 		return;
@@ -1201,12 +1200,12 @@ void Client::process_directory_for_DELETE(Location& location, std::string &full_
 		.build_response();
 }
 
-void Client::process_file_for_DELETE(std::string resource_path)
+void Client::process_file_for_DELETE(std::string resource_path, Location& location)
 {
 	// here we process the file for the DELETE method
 	// check if the file is static file or dynamic file
 	if(should_be_processed_by_cgi(resource_path) == true)
-		serve_dynamic_content(resource_path);
+		serve_dynamic_content(resource_path, location);
 	else
 		delete_file(resource_path);
 }

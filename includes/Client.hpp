@@ -81,19 +81,19 @@ public:
     bool verify_resource_existence(std::string &resource_path);
     bool is_path_directory(std::string &resource_path);
     void process_directory(Location& location, std::string resource_path);
-    void process_file(std::string resource_path);
+    void process_file(std::string resource_path, Location& location);
     bool has_uri_trailing_slash();
     void serve_directory_listing(std::string &resource_path);
     bool should_be_processed_by_cgi(std::string &resource_path);
-    void serve_dynamic_content(std::string &resource_path);
+    void serve_dynamic_content(std::string &resource_path, Location& location);
     void serve_static_content(std::string &resource_path);
 
     void process_GET_CGI(std::string &resource_path);
-    void process_POST_CGI(std::string &resource_path);
+    void process_POST_CGI(std::string &resource_path, Location& location);
     void execute_CGI(const char *path, char *argv[], char *envp[]);
 
     void process_directory_for_DELETE(Location& location, std::string &resource_path);
-    void process_file_for_DELETE(std::string resource_path);
+    void process_file_for_DELETE(std::string resource_path, Location& location);
     void process_DELETE_CGI(std::string &resource_path);
 
     void delete_file(std::string &resource_path);

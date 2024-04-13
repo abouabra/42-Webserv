@@ -6,6 +6,7 @@ def send_response(code, body):
     print(f"HTTP/1.1 {code}\r\n", end="")
     print("Content-Type: text/html\r\n", end="")
     print(f"Content-Length: {len(body)}\r\n", end="")
+    print("Connection: keep-alive\r\n", end="")
     print("\r\n", end="")
     print(body, end="")
 
