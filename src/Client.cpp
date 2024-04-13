@@ -956,7 +956,6 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			// we close the file
 			close(fd);
 
-
 			// now we re open the file in read only mode
 			fd = open(filename.c_str(), O_RDONLY);
 

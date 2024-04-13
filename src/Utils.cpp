@@ -1,5 +1,6 @@
 #include "../includes/Utils.hpp"
 #include <bits/types/time_t.h>
+#include <cstddef>
 #include <iostream>
 
 void log(std::string message, int color)
@@ -207,27 +208,23 @@ std::string extension_to_html_icon(std::string extension) {
     }
 }
 
-// Function to generate a unique temporary filename
-
 std::string GenerateUniqueFileName() {
-    std::string base = "/tmp/webserv_";
-    std::string tempFilename = base;
+    std::string tempFilename = "/tmp/webserv_";
+	size_t result_length = 32;
 
-    // Generate a unique temporary filename
-    const std::string alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    const int alphabetLength = alphabet.length();
+    std::string alphanemeric = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    int length = alphanemeric.length();
 
-    // Generate a seed for randomness based on current time
-    std::time_t currentTime = std::time(NULL);
-    unsigned int seed = static_cast<unsigned int>(currentTime);
+    size_t seed = std::time(NULL);
 
-    // Custom pseudo-random number generator
-    for (int i = 0; i < 5; ++i) {
+    for (size_t i = 0; i < result_length; ++i) {
         seed = (seed * 1103515245 + 12345) & 0x7fffffff; // Linear congruential generator
-        tempFilename += alphabet[seed % alphabetLength];
+        tempFilename += alphanemeric[seed % length];
     }
 
-    return tempFilename;
+	tempFilename += ".tmp";
+    
+	return tempFilename;
 }
 
 std::string decode_URL(std::string URL) {
