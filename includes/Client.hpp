@@ -74,7 +74,7 @@ public:
     int find_matching_location();
     bool process_location_redirection(int location_idx);
     bool validate_method_for_location(int location_idx);
-    void process_GET_and_POST(Location& location);
+    void process_GET_and_POST_and_HEAD(Location& location);
     void process_DELETE(Location& location);
 
     std::string construct_resource_path(Location& location);

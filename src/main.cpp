@@ -28,7 +28,7 @@ int main(int ac, char **av, char **ev)
 	if(ac == 2)
 		file_name = av[1];
 	else
-		file_name = "./config/default.conf";
+		file_name = "./config/Default.conf";
 
 	// try to start the server
 	// if an exception is thrown, print the error and return 1

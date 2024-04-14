@@ -149,6 +149,20 @@ void Client::handle_request()
 
     // process the request and generate response
     process_request();
+
+	// we check if the method is HEAD
+	// if it is we remove the body from the response
+	if(method == "HEAD")
+	{
+		// we find the position of the first \r\n\r\n
+		size_t pos = response.find("\r\n\r\n");
+
+
+		// we remove the body from the response
+		// we do this by getting the substring from the beginning to the position of the first \r\n\r\n
+		// we add 4 to the position to include the \r\n\r\n
+		this->response = response.substr(0, pos + 4);
+	}
 }
 
 void Client::parse_request()
@@ -282,8 +296,8 @@ void Client::process_request() {
 		return;
 
 	// check what method is used and call the appropriate function
-	if (method == "GET" || method == "POST")
-		process_GET_and_POST(config.locations[location_idx]);
+	if (method == "GET" || method == "POST" || method == "HEAD")
+		process_GET_and_POST_and_HEAD(config.locations[location_idx]);
 	else if (method == "DELETE")
 		process_DELETE(config.locations[location_idx]);
 }
@@ -335,7 +349,7 @@ bool Client::check_request_validity()
 
 	// check if the method is implemented in the server
 	// if not we send a 501 response
-	if(method != "GET" && method != "POST" && method != "DELETE")
+	if(method != "GET" && method != "POST" && method != "DELETE" && method != "HEAD")
 	{
 		send_error_response(501);
 		return false;
@@ -496,9 +510,9 @@ bool Client::validate_method_for_location(int location_idx)
 	return false;
 }
 
-void Client::process_GET_and_POST(Location& location)
+void Client::process_GET_and_POST_and_HEAD(Location& location)
 {
-	// here we process the GET and POST methods
+	// here we process the GET and POST and HEAD methods
 	// they are processed in the same function because they have the same logic
 	// they differ in CGI script execution
 
@@ -787,6 +801,14 @@ void Client::serve_static_content(std::string &resource_path)
 {
 	// here we serve the static content
 
+	// we check if the method is POST
+	// if it is we send a 405 response
+	if(method == "POST")
+	{
+		send_error_response(405);
+		return;
+	}
+
 	// we get the file extension
 	std::string extension;
 	try {
@@ -816,7 +838,7 @@ void Client::serve_static_content(std::string &resource_path)
 void Client::serve_dynamic_content(std::string &resource_path, Location& location)
 {
 	// we check what method is used and call the appropriate function
-	if(method == "GET")
+	if(method == "GET" || method == "HEAD")
 		process_GET_CGI(resource_path);
 	else if (method == "POST")
 		process_POST_CGI(resource_path, location);
