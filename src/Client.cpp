@@ -250,20 +250,6 @@ void Client::parse_request()
     // we log that we have parsed the request
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + this->uri, CYAN);
 
-
-    // print parsed request parameters
-    // std::cout << "Method: |" << this->method << "|" << std::endl;
-    // std::cout << "URI: |" << this->uri << "|" << std::endl;
-    // std::cout << "Protocol: |" << this->protocol << "|" << std::endl;
-    // std::cout << "Host: |" << this->request_host << "|" << std::endl;
-    // std::cout << "Connection: |" << this->connection << "|" << std::endl;
-    // std::cout << "Content-Length: |" << this->content_length << "|" << std::endl;
-    // std::cout << "Content-Type: |" << this->content_type << "|" << std::endl;
-	// std::cout << "Request Query String: |" << this->request_query_string << "|" << std::endl;
-    // std::cout << "Cookie: |" << this->cookie << "|" << std::endl;
-    // std::cout << std::endl;
-    // std::cout << "Request Body: |" << this->request_body << "|" << std::endl;
-
 }
 
 void Client::process_request() {
@@ -667,7 +653,7 @@ void Client::serve_directory_listing(std::string &resource_path)
 
 	// we define the html header with css
 	std::string body = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Index of " + resource_path + "</title><style>";
-	body+= "body{font-family:monospace;font-size:16px;margin:0;padding:20px;background-color:#141615;color:#fff}.table_container{display:flex;flex-direction:column;justify-content:center;align-items:center}h1{margin-bottom:20px}table{width:50%;border-collapse:collapse}th,td{padding:5px 10px;border:1px solid transparent}th{text-align:left;font-weight:bold;font-size:18px}th:nth-child(1){width:50%}a{color:#fff;text-decoration:none}a:hover{text-decoration:underline}table tbody tr:hover{background-color:#3b3b3b}";
+	body+= "body{font-family:monospace;font-size:16px;margin:0;padding:20px;background-color:#141615;color:#fff}.table_container{display:flex;flex-direction:column;justify-content:center;align-items:center}h1{margin-bottom:20px}table{width:60%;border-collapse:collapse}th,td{padding:5px 10px;border:1px solid transparent}th{text-align:left;font-weight:bold;font-size:18px}th:nth-child(1){width:70%}a{color:#fff;text-decoration:none}a:hover{text-decoration:underline}table tbody tr:hover{background-color:#3b3b3b}";
 	body+= "</style></head><body><div class=\"table_container\"><h1>Index of "+ resource_path +"</h1><table><thead><tr><th>Name</th><th>Size</th><th>Last Modified</th></tr></thead><tbody>";
 
 	// we define variables
