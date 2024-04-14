@@ -25,6 +25,8 @@ def handle_upload(request_body, upload_dir):
         if not filename:
             continue
         
+        filename, file_extension = os.path.splitext(filename)
+        filename = f"{filename}-{str(uuid.uuid4())}{file_extension}"
         file_path = os.path.join(upload_dir,filename)
 
         try:
