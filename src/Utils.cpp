@@ -232,7 +232,7 @@ std::string decode_URL(std::string URL) {
     decoded_URL.reserve(URL.length());  // Optimization: Reserve capacity
 
     for (size_t i = 0; i < URL.length(); ++i) {
-        if (URL[i] == '%' && i + 2 < URL.length()) {
+		if (URL[i] == '%' && i + 2 < URL.length()) {
             char hex1 = URL[i + 1];
             char hex2 = URL[i + 2];
             if (std::isxdigit(hex1) && std::isxdigit(hex2)) {
@@ -247,11 +247,9 @@ std::string decode_URL(std::string URL) {
             } else {
                 decoded_URL += URL[i];
             }
-        } else if (URL[i] == '+') {
-            decoded_URL += ' ';
-        } else {
-            decoded_URL += URL[i];
         }
+		else
+            decoded_URL += URL[i];
     }
     return decoded_URL;
 }

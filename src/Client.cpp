@@ -140,12 +140,8 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
-	// std::cout << request.substr(0, 500) << std::endl;
-
     // parse and extract request parameters
     parse_request();
-
-	// std::cout << "body size after parse_request(): " << request_body.size() << std::endl; 
 
     // process the request and generate response
     process_request();
@@ -247,15 +243,18 @@ void Client::parse_request()
 	body_ss << ss.rdbuf(); // Move what's inside the stream until EOF to body_ss
 	this->request_body = body_ss.str();
 
+	// we clear the request to make sure it is empty
+	// so that if we have multiple requests in the same connection we dont have the previous request
+	this->request.clear();
+
     // we log that we have parsed the request
-    log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + this->uri, CYAN);
+    log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
 
 }
 
 void Client::process_request() {
     // here we process the request and generate the response
 	// std::cout << request << std::endl;
-
 
     // here we have multiple checks if the request is valid
     // if not we send a 4xx response
@@ -264,6 +263,15 @@ void Client::process_request() {
 	
 	// here we decode the uri after we have checked the request validity
 	this->uri = decode_URL(this->uri);
+
+	// here we check if the Transfer-Encoding header is chunked
+	// if it is we decode the chunked body
+	// and set the content length to the size of the decoded body
+	if(transfer_encoding == "chunked")
+	{
+		decode_chunked_body();
+		this->content_length = itoa(request_body.size());
+	}
 
 	// here we check if the URI is matched with a location
 	// if it did return -1 we send a 404 response
@@ -345,6 +353,50 @@ bool Client::check_request_validity()
     return true;
 }
 
+void Client::decode_chunked_body()
+{
+	// here we decode the chunked body
+	// we do this by reading the chunked body and decoding it
+
+	// we define the decoded body
+	std::string decoded_body;
+
+
+
+	// we define a stringstream to read the chunked body
+	std::stringstream ss(request_body);
+
+	// we loop through the chunked body
+	while(true)
+	{
+		// we define the chunk size
+		size_t chunk_size;
+
+		// we read the chunk size
+		ss >> std::hex >> chunk_size;
+
+		// we check if the chunk size is 0
+		// if it is we break the loop
+		if(chunk_size == 0 || ss.eof())
+			break;
+		
+		// we ignore the \r\n from the chunk size
+		ss.ignore(2);
+
+		// we read the chunk data
+		std::string chunk_data(chunk_size, '\0');
+		ss.read(&chunk_data[0], chunk_size);
+
+		// we remove the \r\n from the chunk data
+		ss.ignore(2);
+
+		// we add the chunk data to the decoded body
+		decoded_body += chunk_data;
+	}
+
+	// we set the decoded body to the request body
+	this->request_body = decoded_body;
+}
 
 // Helper function to send error response with code and body retrieval
 void Client::send_error_response(int status_code) {

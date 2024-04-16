@@ -454,7 +454,7 @@ int Server::write_to_client(int socket_fd, int index)
 	return bytes_sent;
 }
 
-int Server::check_for_timeout(Client client, int index)
+int Server::check_for_timeout(Client& client, int index)
 {
 	// here we check for timeout
 	// if the client has been inactive for more than the timeout value, we close the connection

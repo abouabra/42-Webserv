@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <cstdio>
 
-#define CGI_TIMEOUT 60
+#define CGI_TIMEOUT 30
 
 class Client {
 public:
@@ -69,6 +69,8 @@ public:
 
     void build_response();
     bool check_request_validity();
+    void decode_chunked_body();
+
     std::string generic_error_page(int status_code);
     void send_error_response(int status_code);
     int find_matching_location();
