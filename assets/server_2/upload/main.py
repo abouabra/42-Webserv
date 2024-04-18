@@ -19,7 +19,10 @@ def handle_upload(request_body, upload_dir):
 
     filename = None
     if boundary:
-        part = request_body.split(boundary.encode())[1:-1][0]
+        part = request_body.split(boundary.encode())
+        if len(part) < 3:
+            return "<h1>400 - Bad Request</h1><h3>Invalid request</h3>"
+        part = part[1]
         header, data = part.split(b'\r\n\r\n', 1)
 
         filename = parse_filename(header.decode())
@@ -69,9 +72,13 @@ def main():
     except Exception as e:
         exit(1)
 
+
+    print(f"len in python: {len(request_body)}", file=sys.stderr)
+
+
     # Generate HTTP response body
     response_body = "<!DOCTYPE html><html><head><title>Upload</title><meta charset=\"UTF-8\" />"
-    response_body += "<style>body { font-family: sans-serif; background-color: #141615; color: #317aed; font-size: 2em; text-align: center; }</style>"
+    response_body += "<style>body { font-family: sans-serif; background-color: #141615; color: #3a87ff; font-size: 2em; text-align: center; }</style>"
     response_body += "</head><body>"
     data = handle_upload(request_body, upload_dir)
     if data[:7] == "<h1>201":

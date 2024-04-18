@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<link rel="icon" href="/favicon.ico" />
 		<title>Server 1</title>
-    <link rel="stylesheet" href="style.css" />
+		<link rel="stylesheet" href="style.css" />
 	</head>
 	<body>
 		<div class="container">
@@ -16,29 +16,40 @@
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/site_1'">
+						onclick="location.href='/site_1'"
+					>
 						Go to Site 1
 					</button>
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/site_2'">
+						onclick="location.href='/site_2'"
+					>
 						Go to Site 2
 					</button>
 				</div>
-				<div>
+				<div class="button-container">
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/redirect'">
+						onclick="location.href='/to_server_2'"
+					>
 						Redirect to Server 2
+					</button>
+					<button
+						class="button"
+						role="button"
+						onclick="location.href='/to_server_3'"
+					>
+						Redirect to Server 3
 					</button>
 				</div>
 				<div>
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/list'">
+						onclick="location.href='/list'"
+					>
 						Directory Listing
 					</button>
 				</div>
@@ -46,21 +57,19 @@
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/error_pages'">
+						onclick="location.href='/error_pages'"
+					>
 						Test 403
 					</button>
 					<button
 						class="button"
 						role="button"
-						onclick="location.href='/404_test'">
+						onclick="location.href='/404_test'"
+					>
 						Test 404
 					</button>
-					<form action="/405_test" method="POST">
-						<button
-							class="button"
-							role="button">
-							Test 405
-						</button>
+					<form action="/site_1" method="POST">
+						<button class="button" role="button">Test 405</button>
 					</form>
 				</div>
 			</div>

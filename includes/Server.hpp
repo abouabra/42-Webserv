@@ -11,7 +11,7 @@
 #include "Config.hpp"
 #include "Client.hpp"
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 #define SELECT_TIMEOUT 30
 #define REQUEST_TIMEOUT 60
 

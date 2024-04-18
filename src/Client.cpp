@@ -1,6 +1,6 @@
 #include "../includes/Client.hpp"
 #include <algorithm>
-#include <bits/types/time_t.h>
+#include <signal.h>
 #include <cstddef>
 #include <cstring>
 #include <fcntl.h>
@@ -140,8 +140,11 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
+	std::cout << "Request Size: " << request.size() << std::endl;
     // parse and extract request parameters
     parse_request();
+
+	std::cout << "Request Body Size: " << request_body.size() << std::endl;
 
     // process the request and generate response
     process_request();
@@ -270,6 +273,7 @@ void Client::process_request() {
 	if(transfer_encoding == "chunked")
 	{
 		decode_chunked_body();
+		std::cout << "Decoded Body size: " << request_body.size() << std::endl;
 		this->content_length = itoa(request_body.size());
 	}
 
@@ -705,7 +709,7 @@ void Client::serve_directory_listing(std::string &resource_path)
 
 	// we define the html header with css
 	std::string body = "<!DOCTYPE html><html><head><meta charset='utf-8'><title>Index of " + resource_path + "</title><style>";
-	body+= "body{font-family:monospace;font-size:16px;margin:0;padding:20px;background-color:#141615;color:#fff}.table_container{display:flex;flex-direction:column;justify-content:center;align-items:center}h1{margin-bottom:20px}table{width:60%;border-collapse:collapse}th,td{padding:5px 10px;border:1px solid transparent}th{text-align:left;font-weight:bold;font-size:18px}th:nth-child(1){width:70%}a{color:#fff;text-decoration:none}a:hover{text-decoration:underline}table tbody tr:hover{background-color:#3b3b3b}";
+	body+= "body{font-family:monospace;font-size:16px;margin:0;padding:20px;background-color:#141615;color:#fff}.table_container{display:flex;flex-direction:column;justify-content:center;align-items:center}h1{margin-bottom:20px}table{width:50%;border-collapse:collapse}th,td{padding:5px 10px;border:1px solid transparent}th{text-align:left;font-weight:bold;font-size:18px}th:nth-child(1){width:70%}a{color:#fff;text-decoration:none}a:hover{text-decoration:underline}table tbody tr:hover{background-color:#3b3b3b}";
 	body+= "</style></head><body><div class=\"table_container\"><h1>Index of "+ resource_path +"</h1><table><thead><tr><th>Name</th><th>Size</th><th>Last Modified</th></tr></thead><tbody>";
 
 	// we define variables
@@ -937,7 +941,7 @@ void Client::process_GET_CGI(std::string &resource_path)
 	// we free the memory
 
 	// we free the memory allocated for the environment variables
-	for (size_t i = 0; i < env.size(); i++)
+	for (size_t i = 0; i < new_env.size(); i++)
 		delete envp[i];
 
 	// we free the memory allocated for the argv
@@ -1183,7 +1187,7 @@ void Client::process_POST_CGI(std::string &resource_path, Location& location)
 	// we free the memory
 
 	// we free the memory allocated for the environment variables
-	for (size_t i = 0; i < env.size(); i++)
+	for (size_t i = 0; i < new_env.size(); i++)
 		delete envp[i];
 
 	// we free the memory allocated for the argv
@@ -1322,7 +1326,7 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 	// we free the memory
 
 	// we free the memory allocated for the environment variables
-	for (size_t i = 0; i < env.size(); i++)
+	for (size_t i = 0; i < new_env.size(); i++)
 		delete envp[i];
 
 	// we free the memory allocated for the argv

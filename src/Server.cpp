@@ -353,22 +353,38 @@ int Server::read_from_client(int socket_fd, int index)
 	// we add the data to the request of the client
 	this->clients[index].request += std::string(buffer, bytes_read);
 
-	// we check if the bytes_read is less than the buffer size
-	// this will mean that we have read all the data
-	// so we process the request
-	if (bytes_read < BUFFER_SIZE)
-	{
-		// std::cout << "called" << std::endl;
-		if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
-		{
-			// we process the request
-			// this function will parse and process the request then generate a response
-			this->clients[index].handle_request();
+	// // we check if the bytes_read is less than the buffer size
+	// // this will mean that we have read all the data
+	// // so we process the request
+	// if (bytes_read < BUFFER_SIZE)
+	// {
+	
 
-			// we add the socket to the writes fd_set
-			FD_SET(socket_fd, &this->writes);
-		}
+
+
+	// here we check if the request is complete
+	if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
+	{
+		// we process the request
+		// this function will parse and process the request then generate a response
+		this->clients[index].handle_request();
+
+		// we add the socket to the writes fd_set
+		FD_SET(socket_fd, &this->writes);
 	}
+	// {
+
+
+	// 	// if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
+	// 	// {
+	// 		// we process the request
+	// 		// this function will parse and process the request then generate a response
+	// 		this->clients[index].handle_request();
+
+	// 		// we add the socket to the writes fd_set
+	// 		FD_SET(socket_fd, &this->writes);
+	// 	// }
+	// }
 
 	// we update the timeout of the client
 	this->clients[index].timeout = std::time(NULL);
