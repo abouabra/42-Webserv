@@ -73,9 +73,6 @@ def main():
         exit(1)
 
 
-    print(f"len in python: {len(request_body)}", file=sys.stderr)
-
-
     # Generate HTTP response body
     response_body = "<!DOCTYPE html><html><head><title>Upload</title><meta charset=\"UTF-8\" />"
     response_body += "<style>body { font-family: sans-serif; background-color: #141615; color: #3a87ff; font-size: 2em; text-align: center; }</style>"

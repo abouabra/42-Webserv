@@ -140,11 +140,8 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
-	std::cout << "Request Size: " << request.size() << std::endl;
     // parse and extract request parameters
     parse_request();
-
-	std::cout << "Request Body Size: " << request_body.size() << std::endl;
 
     // process the request and generate response
     process_request();
@@ -317,8 +314,6 @@ bool Client::check_request_validity()
 		send_error_response(400);
 		return false;
 	}
-
-	//
 
     // check if the uri contains any invalid characters or empty
 	// if it does we send a 400 response
