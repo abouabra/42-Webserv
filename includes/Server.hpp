@@ -12,8 +12,8 @@
 #include "Client.hpp"
 
 #define BUFFER_SIZE 4096
-#define SELECT_TIMEOUT 30
-#define REQUEST_TIMEOUT 60
+#define SELECT_TIMEOUT 10
+#define REQUEST_TIMEOUT 30
 
 class Server {
 public:

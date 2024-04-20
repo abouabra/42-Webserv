@@ -41,10 +41,7 @@ std::string read_file(std::string name)
 	std::string line;
 
 	if(!file.is_open())
-	{
-		// log("Error: Could not open file: " + name, RED);
-		return "";
-	}
+		throw std::runtime_error("Error: Could not open file: " + name);
 
 	while(std::getline(file, line))
 	{
@@ -82,7 +79,7 @@ int ft_atoi(std::string str)
 	}
 	for(size_t i = 0; i < str.length(); i++)
 	{
-		if(!isdigit(str[i]))
+		if(!std::isdigit(str[i]))
 			return -1;
 		num = num * 10 + (str[i] - '0');
 	}

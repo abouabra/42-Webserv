@@ -188,8 +188,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		// and break the loop
 		if(line == "server:")
 		{
-			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1, std::ios::beg);
+			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
 		}
 
@@ -485,8 +484,7 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		// if we did we move the stringstream back to the start of the line
 		if (line == "server:" || key == "cgi:" || key == "location:")
 		{
-			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1, std::ios::beg);
+			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
 		}
 
@@ -575,8 +573,7 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		// here we check if we reached the end of the cgi block
 		if (line == "server:" || key == "error_pages:" || key == "location:")
 		{
-			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1, std::ios::beg);
+			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
 		}
 
@@ -750,8 +747,7 @@ Location parse_server_location(std::stringstream &ss)
 		// if we did we move the stringstream back to the start of the line
 		if (key == "server:" || key == "location:" || key == "cgi:" || key == "error_pages:")
 		{
-			int i = ss.tellg();
-			ss.seekg(i - line.size() - 1);
+			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
 		}
 

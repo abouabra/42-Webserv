@@ -3,6 +3,7 @@
 #include <cstring>
 #include <ctime>
 #include <netinet/in.h>
+#include <sys/fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 
@@ -115,25 +116,18 @@ int Server::create_server_socket()
 
 void Server::set_socket_to_non_blocking(int socket_fd)
 {
-
 	// here we set the socket_fd to non-blocking mode
 	// non blocking sockets are sockets that do not hold up the program when they are waiting for data
 
-	// we get the flags of the socket using fcntl and F_GETFL flag
-	int flags = fcntl(socket_fd, F_GETFL, 0);
-	// if the flags are less than 0, we throw an exception
-	if (flags < 0) {
-		throw std::runtime_error("failed to get socket flags");
-	}
-
-	// we set the socket to non-blocking by adding the O_NONBLOCK flag to the flags
+	// we set the socket to non-blocking by adding the O_NONBLOCK and O_CLOEXEC flags
 	// we use the OR operator to add the flag
-	int result = fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
+	// O_NONBLOCK: non-blocking mode
+	// O_CLOEXEC: close the file descriptor when an exec function is called to prevent file descriptor leaks
+	
+	int result = fcntl(socket_fd, F_SETFL, O_NONBLOCK | O_CLOEXEC);
 	// if the result is less than 0, we throw an exception
 	if (result < 0)
-	{
 		throw std::runtime_error("failed to set socket to non-blocking");
-	}
 }
 
 void Server::set_socket_to_be_reusable(int socket_fd)
@@ -155,9 +149,7 @@ void Server::set_socket_to_be_reusable(int socket_fd)
 	
 	// if the result is less than 0, we throw an exception
 	if (result < 0)
-	{
 		throw std::runtime_error("failed to set socket to be reusable");
-	}
 }
 
 void Server::bind_server_address(int socket_fd, ServerConfig server)
@@ -287,7 +279,7 @@ void Server::accept_connection(int socket_fd, int index)
 	}
 
 	// we log that a connection has been accepted
-	// log("Accepted connection on socket " + itoa(client_socket_fd) + " from " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + ":" + itoa(ntohs(client_address.sin_port)), GREEN);
+	log("Accepted connection on socket " + itoa(client_socket_fd) + " from " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + ":" + itoa(ntohs(client_address.sin_port)), GREEN);
 	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 	
 	// we set the client socket to non-blocking
@@ -312,7 +304,7 @@ void Server::accept_connection(int socket_fd, int index)
 	}
 
 	// we set the timeout for client
-	client.timeout = std::time(NULL);
+	client.keep_alive_timeout = std::time(NULL);
 }
 
 int Server::read_from_client(int socket_fd, int index)
@@ -355,18 +347,21 @@ int Server::read_from_client(int socket_fd, int index)
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
-	if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
+	if(bytes_read < BUFFER_SIZE)
 	{
-		// we process the request
-		// this function will parse and process the request then generate a response
-		this->clients[index].handle_request();
+		// if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
+		// {
+			// we process the request
+			// this function will parse and process the request then generate a response
+			this->clients[index].handle_request();
 
-		// we add the socket to the writes fd_set
-		FD_SET(socket_fd, &this->writes);
+			// we add the socket to the writes fd_set
+			FD_SET(socket_fd, &this->writes);
+		// }
 	}
 
 	// we update the timeout of the client
-	this->clients[index].timeout = std::time(NULL);
+	this->clients[index].keep_alive_timeout = std::time(NULL);
 
 	// we return the number of bytes read
 	return bytes_read;
@@ -433,17 +428,24 @@ int Server::write_to_client(int socket_fd, int index)
 
 		// we check if the connection is close
 		// it means that the client wants to close the connection
-		if(this->clients[index].response_connection == "close")
+		if(this->clients[index].connection == "close")
+		{
+			// we log that the connection has been closed
+			log("Connection On Socket " + itoa(socket_fd) + " Closed By Server, Closing Connection ...", GREEN);
+
+			// we close the connection
 			close_connection(socket_fd, index);
+		}
 		
 		// else we remove the socket from the writes fd_set
 		// because we have sent all the data
+		// and we dont close the connection because the client wants to keep the connection open
 		else
 			FD_CLR(socket_fd, &this->writes);
 	}
 
 	// we update the timeout of the client
-	this->clients[index].timeout = std::time(NULL);
+	this->clients[index].keep_alive_timeout = std::time(NULL);
 
 	// we return the number of bytes sent
 	return bytes_sent;
@@ -458,7 +460,7 @@ int Server::check_for_timeout(Client& client, int index)
 	time_t current_time = std::time(NULL);
 
 	// we check if the difference is greater than the timeout value
-	if (current_time - client.timeout >= REQUEST_TIMEOUT)
+	if (current_time - client.keep_alive_timeout >= REQUEST_TIMEOUT)
 	{
 		// we log that the connection has timed out
 		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out, Closing Connection ...", GREEN);

@@ -20,7 +20,7 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->port = port;
     this->config = config;
     this->sent_size = 0;
-    this->timeout = std::time(NULL);
+    this->keep_alive_timeout = std::time(NULL);
 
     // initialize status codes
 	this->status_codes[200] = "OK";
@@ -56,7 +56,6 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->mime_types["wav"] = "audio/vnd.wave";
     this->mime_types["mp4"] = "video/mp4";
     this->mime_types["webm"] = "video/webm";
-    this->mime_types["ogg"] = "video/ogg";
     this->mime_types["pdf"] = "application/pdf";
     this->mime_types["doc"] = "application/msword";
     this->mime_types["docx"] = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
@@ -86,7 +85,7 @@ Client &Client::operator=(Client const &obj)
         this->response = obj.response;
         this->config = obj.config;
         this->sent_size = obj.sent_size;
-        this->timeout = obj.timeout;
+        this->keep_alive_timeout = obj.keep_alive_timeout;
 
         this->method = obj.method;
         this->uri = obj.uri;
@@ -99,7 +98,6 @@ Client &Client::operator=(Client const &obj)
         this->request_body = obj.request_body;
 
         this->response_status_code = obj.response_status_code;
-        this->response_connection = obj.response_connection;
         this->response_body = obj.response_body;
 
         this->status_codes = obj.status_codes;
@@ -111,11 +109,6 @@ Client &Client::operator=(Client const &obj)
 
 Client& Client::set_status_code(int status_code) {
     this->response_status_code = status_code;
-    return *this;
-}
-
-Client& Client::set_connection(std::string connection) {
-    this->response_connection = connection;
     return *this;
 }
 
@@ -131,7 +124,7 @@ Client& Client::set_content_type(std::string content_type) {
 
 void Client::build_response() {
     this->response = "HTTP/1.1 " + itoa(this->response_status_code) + " " + status_codes[response_status_code] + "\r\n";
-    this->response += "Connection: " + this->response_connection + "\r\n";
+    this->response += "Connection: " + this->connection + "\r\n";
     this->response += "Content-Length: " + itoa(this->response_body.size()) + "\r\n";
     this->response += "Content-Type: " + this->response_content_type + "\r\n";
     this->response += "\r\n";
@@ -270,7 +263,6 @@ void Client::process_request() {
 	if(transfer_encoding == "chunked")
 	{
 		decode_chunked_body();
-		std::cout << "Decoded Body size: " << request_body.size() << std::endl;
 		this->content_length = itoa(request_body.size());
 	}
 
@@ -400,7 +392,6 @@ void Client::decode_chunked_body()
 // Helper function to send error response with code and body retrieval
 void Client::send_error_response(int status_code) {
     this->set_status_code(status_code)
-        .set_connection(this->connection)
         .set_body(check_error_page(status_code))
 		.set_content_type("text/html")
         .build_response();
@@ -420,14 +411,13 @@ std::string Client::check_error_page(int status_code)
         std::string error_page_path = config.root + this->config.error_pages[status_code];
 
         // we try to read the error page
-        std::string content = read_file(error_page_path);
-
+		try {
+        	return read_file(error_page_path);
+		}
 		// if the error page is not found we send a generic error page
-		if (content.empty())
+		catch(const std::exception& e) {
 			return generic_error_page(status_code);
-
-		//otherwise we return the content of the error page
-        return content;
+		}
     }
 
 	// if the error page is not defined we send a generic error page
@@ -791,7 +781,6 @@ void Client::serve_directory_listing(std::string &resource_path)
 	// we build the response
 	this->set_status_code(200)
 		.set_content_type("text/html")
-		.set_connection(this->connection)
 		.set_body(body)
 		.build_response();
 }
@@ -853,21 +842,21 @@ void Client::serve_static_content(std::string &resource_path)
 	} catch (std::exception &e) {
 		extension = "txt";
 	}
+	
+	std::string data;
 
-	// we read the file
-	std::string data = read_file(resource_path);
-
-	// if the file is empty we send a 500 response
-	if (data.empty())
-	{
-		send_error_response(500);
-		return;
+	// we try to read the file
+	try {
+		data = read_file(resource_path);
+	}
+	// if page is not found we send a generic error page
+	catch(const std::exception& e) {
+		return send_error_response(404);
 	}
 
 	// we read the file and send it as the response
 	this->set_status_code(200)
 		.set_content_type(mime_types[extension])
-		.set_connection(connection)
 		.set_body(data)
 		.build_response();
 }
@@ -996,7 +985,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			{
 				// if the file fails to open we send a 500 response
 				send_error_response(500);
-				exit(1);
+				std::exit(1);
 			}
 
 			// we write the request body to the file
@@ -1022,7 +1011,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			if(fd < 0)
 			{
 				send_error_response(500);
-				exit(1);
+				std::exit(1);
 			}
 
 			// we redirect the stdin to the read end of the fd
@@ -1040,7 +1029,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 
 		// if the execve fails we send a 500 response
 		send_error_response(500);
-		exit(1);
+		std::exit(1);
 	}
 
 	// if the fork is the parent process
@@ -1253,7 +1242,6 @@ void Client::process_directory_for_DELETE(Location& location, std::string &full_
 	// if the folder is deleted we send a 204 response
 	// because the folder is deleted and there is no content to send
 	this->set_status_code(204)
-		.set_connection(this->connection)
 		.set_body("")
 		.build_response();
 }
@@ -1345,7 +1333,6 @@ void Client::delete_file(std::string &resource_path)
 	// if the file is deleted we send a 204 response
 	// because the file is deleted and there is no content to send
 	this->set_status_code(204)
-		.set_connection(this->connection)
 		.set_body("")
 		.build_response();
 }

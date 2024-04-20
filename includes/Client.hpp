@@ -41,11 +41,10 @@ public:
     std::string cookie;
     std::string request_body;
     std::string request_query_string;
-    time_t timeout;
+    time_t keep_alive_timeout;
 
     // Response variables
     int response_status_code;
-    std::string response_connection;
     std::string response_content_type;
     std::string response_body;
     std::string response;
@@ -61,7 +60,6 @@ public:
     std::string check_error_page(int status_code);
 
     Client& set_status_code(int status_code);
-    Client& set_connection(std::string connection);
     Client& set_body(std::string body);
     Client& set_content_type(std::string content_type);
 
