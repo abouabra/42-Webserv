@@ -7,9 +7,7 @@
 #include <vector>
 
 /*
-
 	CONFIG CLASS
-
 */
 
 Config::Config()
@@ -37,30 +35,25 @@ Config& Config::Config::operator=(Config const &obj)
 	return *this;
 }
 
-
 Config::Config(std::string file_name)
 {
-	
 	// here we will read the config file and store it in a string
 	config_file = read_config(file_name);
-	
+
 	// here we clean the file by removing comments and empty lines
 	clean_file(config_file);
-	
+
 	// here we parse and checks the config file and store the values in the Config object
 	parse_config(config_file);
 
 	log("Config file: " + file_name, WHITE);
-
-	// // here we print the config file
-	// print_config();
 }
 
 std::string Config::read_config(std::string &config_file)
 {
 	// here we open the config file
 	std::fstream file(config_file.c_str(), std::ios::in);
-	
+
 	// here we check if the file is open
 	// if not we throw an exception
 	if(!file.is_open())
@@ -114,7 +107,6 @@ void Config::clean_file(std::string& config) {
 	}
 }
 
-
 void Config::parse_config(std::string &config_file)
 {
 	// here we start by turning the string into a stringstream
@@ -151,7 +143,7 @@ void Config::parse_config(std::string &config_file)
 			std::cout << "Server #" << i << std::endl;
 			throw(std::runtime_error("Missing host"));
 		}
-		if (servers[i].port == 0)
+		if (servers[i].port == -1)
 		{
 			// here we check if the port is missing
 			std::cout << "Server #" << i << std::endl;
@@ -175,7 +167,7 @@ void Config::parse_config(std::string &config_file)
 
 ServerConfig parse_server_config(std::stringstream &ss)
 {
-	ServerConfig new_serve;
+	ServerConfig new_server;
 	std::string line;
 	std::string key;
 	std::string value;
@@ -195,8 +187,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 		// here we check for the number of tabs
 		// inside a server block, there should be only one tab
 		// otherwise we throw an exception
-		int tabs = count_c(line, '\t');
-		if (tabs != 1)
+		if (count_c(line, '\t') != 1)
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid server config tabs"));
@@ -223,13 +214,13 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 		// we check each key to see if its valid
 		// if not we throw an exception otherwise we store the keyword value
-		
-		
+
+
 		// here we parse the host keyword
 		if (key == "host:")
 		{
 			// check duplicate
-			if (new_serve.host != -1)
+			if (new_server.host != -1)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated host"));
@@ -238,14 +229,14 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// here we check if the host is valid
 			std::string result;
 			assign_if_valid(key, value, result, is_host_valid);
-			new_serve.host = ip_to_int(result);
+			new_server.host = ip_to_int(result);
 		}
 
 		// here we parse the port keyword
 		else if (key == "port:")
 		{
 			// check duplicate
-			if (new_serve.port != 0)
+			if (new_server.port != -1)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated port"));
@@ -254,28 +245,28 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// here we check if the port is valid
 			std::string result;
 			assign_if_valid(key, value, result, is_port_valid);
-			new_serve.port = ft_atoi(result);
+			new_server.port = ft_atoi(result);
 		}
 
 		// here we parse the root keyword
 		else if (key == "root:")
 		{
 			// check duplicate
-			if (new_serve.root.empty() == false)
+			if (new_server.root.empty() == false)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated root"));
 			}
 
 			// here we check if the root is valid
-			assign_if_valid(key, value, new_serve.root, is_root_valid);
+			assign_if_valid(key, value, new_server.root, is_root_valid);
 		}
 
 		// here we parse the max body size keyword
 		else if (key == "max_body_size:")
 		{
 			// check duplicate
-			if (new_serve.max_body_size != DEFAULT_MAX_BODY_SIZE)
+			if (new_server.max_body_size != DEFAULT_MAX_BODY_SIZE)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated max_body_size"));
@@ -284,33 +275,33 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			// here we check if the max body size is valid
 			std::string result;
 			assign_if_valid(key, value, result, is_max_body_size_valid);
-			new_serve.max_body_size = ft_atoi(result);
+			new_server.max_body_size = ft_atoi(result);
 		}
 
 		// here we parse the index keyword on the server block
 		else if (key == "index:")
 		{
 			// check duplicate
-			if (new_serve.index.empty() == false)
+			if (new_server.index.empty() == false)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated index"));
 			}
 
 			// here we check if the index is valid
-			assign_if_valid(key, value, new_serve.index, is_index_valid);
+			assign_if_valid(key, value, new_server.index, is_index_valid);
 		}
 
 		// here we parse the error pages keyword and its sub keys
 		else if (line == "\terror_pages:")
 		{
-			new_serve.error_pages = parse_error_pages(ss);
+			new_server.error_pages = parse_error_pages(ss);
 		}
 
 		// here we parse the cgi keyword and its sub keys
 		else if (key == "cgi:")
 		{
-			new_serve.cgi = parse_cgi(ss);
+			new_server.cgi = parse_cgi(ss);
 		}
 
 		// here we parse the location keyword and its sub keys
@@ -335,14 +326,14 @@ ServerConfig parse_server_config(std::stringstream &ss)
 				location.methods.push_back("GET");
 
 			// we add the location to the server
-			new_serve.locations.push_back(location);
+			new_server.locations.push_back(location);
 		}
 		else {
 			std::cout << line << std::endl;
 			throw std::runtime_error("Invalid config syntax");
 		}
 	}
-	return new_serve;
+	return new_server;
 }
 
 void assign_if_valid(std::string &key, std::string &value, std::string &assign_to, bool (*is_valid)(std::string &))
@@ -371,6 +362,10 @@ bool is_host_valid(std::string &host)
 	if(count_c(host, '.') != 3)
 		return false;
 
+	// here we check if the host contains only digits and dots
+	if(host.find_first_not_of("0123456789.") != std::string::npos)
+		return false;
+
 	// here we split the host into tokens
 	std::stringstream ss(host);
 	std::string token;
@@ -382,10 +377,6 @@ bool is_host_valid(std::string &host)
 		
 		// here we check if the token is empty
 		if (token.empty())
-			return false;
-		
-		// here we check if the token contains only digits
-		if(host.find_first_not_of("0123456789.") != std::string::npos)
 			return false;
 		
 		// here we check if the token is a valid number
@@ -408,8 +399,9 @@ bool is_port_valid(std::string &port)
 		return false;
 	
 	// here we check if the port is a valid number
-	if (ft_atoi(port) < 0 || ft_atoi(port) > 65535)
+	if (ft_atoi(port) <= 0 || ft_atoi(port) > 65535)
 		return false;
+
 	return true;
 }
 
@@ -424,6 +416,11 @@ bool is_root_valid(std::string &root)
 	// if the path doesn't start with a / we return false
 	// also if the path doesn't end with a / we return false
 	if (root[0] != '/' || root[root.size() - 1] != '/')
+		return false;
+
+	// here we check if the path contains consecutive slashes
+	// if it does we return false
+	if (root.find("//") != std::string::npos)
 		return false;
 
 	// here we check if the path contains any invalid characters
@@ -456,6 +453,11 @@ bool is_index_valid(std::string &index)
 	if (index.empty())
 		return false;
 
+	// here we check that the file name doesn't contain slashes at the beginning or end
+	// if it does we return false
+	if (index[0] == '/' || index[index.size() - 1] == '/')
+		return false;
+
 	// here we check if the path contains any invalid characters
 	// if it does we return false
 	if (index.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
@@ -481,8 +483,9 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 		ss_2 >> value;
 
 		// here we check if we reached the end of the error pages block
+		// we do that by checking the number of tabs
 		// if we did we move the stringstream back to the start of the line
-		if (line == "server:" || key == "cgi:" || key == "location:")
+		if (count_c(line, '\t') != 2)
 		{
 			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
@@ -495,8 +498,9 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 			throw(std::runtime_error("Invalid error page code"));
 		}
 
-		// if key ends with a colon, we remove it
-		if (key[key.size() - 1] == ':')
+		// if key ends with a colon and has only one colon
+		// we remove it
+		if (key[key.size() - 1] == ':' && count_c(key, ':') == 1)
 			key = key.substr(0, key.size() - 1);
 		else
 		{
@@ -528,6 +532,20 @@ std::map<int, std::string> parse_error_pages(std::stringstream &ss)
 
 		// here we check if the value is a valid path
 		if (value.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid error page path"));
+		}
+
+		// here we check if the path should not start or end with a /
+		if (value[0] == '/' || value[value.size() - 1] == '/')
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid error page path"));
+		}
+		
+		// here we check if the path contains consecutive slashes
+		if (value.find("//") != std::string::npos)
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid error page path"));
@@ -571,7 +589,7 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		ss_2 >> value;
 
 		// here we check if we reached the end of the cgi block
-		if (line == "server:" || key == "error_pages:" || key == "location:")
+		if (count_c(line, '\t') != 2)
 		{
 			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
@@ -591,8 +609,15 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 			throw(std::runtime_error("Invalid cgi key"));
 		}
 
+		// here we check if path contains consecutive slashes
+		if (key.find("//") != std::string::npos)
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid cgi key"));
+		}
+
 		// if key ends with a colon, we remove it
-		if (key[key.size() - 1] == ':')
+		if (key[key.size() - 1] == ':' && count_c(key, ':') == 1)
 			key = key.substr(0, key.size() - 1);
 		else
 		{
@@ -601,7 +626,7 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 		}
 
 		// here we check if the key is starting with a dot
-		if (key[0] != '.')
+		if (key[0] != '.' && key.find('.') != 1)
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi key"));
@@ -621,8 +646,15 @@ std::map<std::string, std::string> parse_cgi(std::stringstream &ss)
 			throw(std::runtime_error("Invalid cgi value"));
 		}
 
+		// here we check if the value contains consecutive slashes
+		if (value.find("//") != std::string::npos)
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid cgi value"));
+		}
+
 		// here we check if the path starts with a /
-		if (value[0] != '/')
+		if (value[0] != '/' || value[value.size() - 1] == '/')
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid cgi value"));
@@ -661,6 +693,16 @@ bool is_location_path_valid(std::string &path)
 	if (path[0] != '/')
 		return false;
 
+	// here we check if the path doesn't end with a /
+	// if it does we return false
+	if(path[path.size() - 1] == '/' && path != "/")
+		return false;
+
+	// here we check if the path contains consecutive slashes
+	// if it does we return false
+	if (path.find("//") != std::string::npos)
+		return false;
+
 	// here we check if the path contains any invalid characters
 	// if it does we return false
 	if (path.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_/.") != std::string::npos)
@@ -684,48 +726,6 @@ bool is_redirect_URL_valid(std::string &path)
 	return true;
 }
 
-void Config::print_config()
-{
-	// here we loop through the servers and print their values
-
-	for(size_t i = 0; i < servers.size(); i++)
-	{
-		std::cout << "Server #" << i << std::endl;
-		std::cout << "\tHost: " << int_to_ip(servers[i].host) << std::endl;
-		std::cout << "\tPort: " << servers[i].port << std::endl;
-		std::cout << "\tRoot: " << servers[i].root << std::endl;
-		std::cout << "\tMax body size: " << servers[i].max_body_size << std::endl;
-		std::cout << "\tIndex: " << servers[i].index << std::endl;
-		std::cout << "\tError pages: " << std::endl;
-
-		for (std::map<int, std::string>::iterator it = servers[i].error_pages.begin(); it != servers[i].error_pages.end(); it++)
-			std::cout << "\t\t" << it->first << " => " << it->second << std::endl;
-		std::cout << "\tCGI: " << std::endl;
-		
-		for (std::map<std::string, std::string>::iterator it = servers[i].cgi.begin(); it != servers[i].cgi.end(); it++)
-			std::cout << "\t\t" << it->first << " => " << it->second << std::endl;
-		
-		for (size_t j = 0; j < servers[i].locations.size(); j++)
-		{
-			std::cout << "\tLocation #" << j << std::endl;
-			std::cout << "\t\tPath: " << servers[i].locations[j].path << std::endl;
-			std::cout << "\t\tRoot: " << servers[i].locations[j].root << std::endl;
-			std::cout << "\t\tIndex: " << servers[i].locations[j].index << std::endl;
-			std::cout << "\t\tMethods: ";
-			
-			for (size_t k = 0; k < servers[i].locations[j].methods.size(); k++)
-				std::cout << servers[i].locations[j].methods[k] << " ";
-			std::cout << std::endl;
-			
-			std::cout << "\t\tRedirect url: " << servers[i].locations[j].redirect_URL << std::endl;
-			std::cout << "\t\tDirectory listing: " << servers[i].locations[j].directory_listing << std::endl;
-			std::cout << "\t\tUpload path: " << servers[i].locations[j].upload_dir << std::endl;
-		}
-	}
-}
-
-
-
 Location parse_server_location(std::stringstream &ss)
 {
 	// here we parse the location block
@@ -745,7 +745,7 @@ Location parse_server_location(std::stringstream &ss)
 
 		// here we check if we reached the end of the location block
 		// if we did we move the stringstream back to the start of the line
-		if (key == "server:" || key == "location:" || key == "cgi:" || key == "error_pages:")
+		if (count_c(line, '\t') != 2)
 		{
 			ss.seekg((size_t) ss.tellg() - line.size() - 1, std::ios::beg);
 			break;
@@ -791,14 +791,13 @@ Location parse_server_location(std::stringstream &ss)
 			parse_location_methods(ss_2, line, location.methods);
 
 			// check if the total number of pipes matches the number of methods on the vector -1
-			size_t total_pipe_count = count_c(line, '|');
-			if(total_pipe_count != location.methods.size() - 1)
+			if(count_c(line, '|') != (int) location.methods.size() - 1)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("Invalid config method"));
 			}
 
-			//check if there is duplicate methods
+			// check if there is duplicate methods
 			// first we sort the vector
 			// then we check if there are any adjacent duplicate methods
 			// if there are we throw an exception
@@ -927,7 +926,7 @@ ServerConfig::ServerConfig()
 {
 	// setting up default values
 	host = -1;
-	port = 0;
+	port = -1;
 	max_body_size = DEFAULT_MAX_BODY_SIZE;
 }
 

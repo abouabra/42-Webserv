@@ -10,7 +10,6 @@
 	then it will create the Server object and run the server
 */
 
-
 int main(int ac, char **av, char **ev)
 {
 	std::string file_name;
@@ -19,7 +18,7 @@ int main(int ac, char **av, char **ev)
 	// if so, print the usage and return 1
 	if(ac > 2)
 	{
-		std::cout << "Usage: ./webserv <config_file>" << std::endl;
+		std::cerr << "Usage: ./webserv <config_file>" << std::endl;
 		return 1;
 	}
 

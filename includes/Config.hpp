@@ -1,5 +1,4 @@
 #pragma once
-#include <cstddef>
 #include <exception>
 #include <iostream>
 #include <map>
@@ -9,7 +8,6 @@
 #include "Utils.hpp"
 
 #define DEFAULT_MAX_BODY_SIZE 1000000
-
 
 class Location {
 public:
