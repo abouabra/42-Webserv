@@ -170,7 +170,7 @@ void Client::parse_request()
 	this->transfer_encoding.clear();
 	this->request_query_string.clear();
 	this->cookie.clear();
-
+   
     // here we loop through the request line by line
     // and parse the request header
     while(std::getline(ss, line)) {

@@ -279,7 +279,6 @@ void Server::accept_connection(int socket_fd, int index)
 	}
 
 	// we log that a connection has been accepted
-	log("Accepted connection on socket " + itoa(client_socket_fd) + " from " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + ":" + itoa(ntohs(client_address.sin_port)), GREEN);
 	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 	
 	// we set the client socket to non-blocking
@@ -299,9 +298,7 @@ void Server::accept_connection(int socket_fd, int index)
 	// we check if the client_socket_fd is greater than the max_fd
 	// if so, we set the max_fd to the client_socket_fd
 	if (client_socket_fd > this->max_fd)
-	{
 		this->max_fd = client_socket_fd;
-	}
 
 	// we set the timeout for client
 	client.keep_alive_timeout = std::time(NULL);
@@ -349,15 +346,12 @@ int Server::read_from_client(int socket_fd, int index)
 	// if it returns less than 0, it means that there is no more data to be read
 	if(bytes_read < BUFFER_SIZE)
 	{
-		// if(recv(socket_fd, buffer, BUFFER_SIZE, MSG_PEEK) < 0)
-		// {
-			// we process the request
-			// this function will parse and process the request then generate a response
-			this->clients[index].handle_request();
+		// we process the request
+		// this function will parse and process the request then generate a response
+		this->clients[index].handle_request();
 
-			// we add the socket to the writes fd_set
-			FD_SET(socket_fd, &this->writes);
-		// }
+		// we add the socket to the writes fd_set
+		FD_SET(socket_fd, &this->writes);
 	}
 
 	// we update the timeout of the client
