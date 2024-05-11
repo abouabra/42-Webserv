@@ -304,7 +304,7 @@ void Server::accept_connection(int socket_fd, int index)
 	client.keep_alive_timeout = std::time(NULL);
 }
 
-int Server::read_from_client(int socket_fd, int index)
+int Server::read_from_client(int client_fd, int index)
 {
 	// here we read data from the client in chunks
 
@@ -315,18 +315,18 @@ int Server::read_from_client(int socket_fd, int index)
 	std::memset(buffer, 0, BUFFER_SIZE);
 
 	// we read the data using recv with the following parameters:
-	// socket_fd: the socket file descriptor
+	// client_fd: the socket file descriptor
 	// buffer: the buffer to store the data
 	// BUFFER_SIZE: the size of the buffer
 	// 0: flags (default)
-	int bytes_read = recv(socket_fd, buffer, BUFFER_SIZE, 0);
+	int bytes_read = recv(client_fd, buffer, BUFFER_SIZE, 0);
 
 	// if the bytes_read is less than 0, it means that there was an error
 	// so we log the error then we close the connection and return -1
 	if (bytes_read < 0)
 	{
-		log("Failed to read from socket " + itoa(socket_fd), RED);
-		close_connection(socket_fd, index);
+		log("Failed to read from socket " + itoa(client_fd), RED);
+		close_connection(client_fd, index);
 		return -1;
 	}
 
@@ -334,8 +334,8 @@ int Server::read_from_client(int socket_fd, int index)
 	// so we log that the connection has been closed then we close the connection and return -1
 	if (bytes_read == 0)
 	{
-		log("Connection On Socket " + itoa(socket_fd) + " Closed By Client, Closing Connection ...", GREEN);
-		close_connection(socket_fd, index);
+		log("Connection On Socket " + itoa(client_fd) + " Closed By Client, Closing Connection ...", GREEN);
+		close_connection(client_fd, index);
 		return -1;
 	}
 
@@ -351,7 +351,7 @@ int Server::read_from_client(int socket_fd, int index)
 		this->clients[index].handle_request();
 
 		// we add the socket to the writes fd_set
-		FD_SET(socket_fd, &this->writes);
+		FD_SET(client_fd, &this->writes);
 	}
 
 	// we update the timeout of the client
