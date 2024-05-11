@@ -899,11 +899,7 @@ void Client::process_GET_CGI(std::string &resource_path)
 		while (std::getline(ss, item, ';'))
 		{
 			item = item[0] == ' ' ? item.substr(1) : item;
-
-			std::string header = item.substr(0, item.find("="));
-			std::string value = item.substr(item.find("=") + 1);
-
-			new_env.push_back("HTTP_COOKIE_" + header + "=" + value);
+			new_env.push_back("HTTP_COOKIE_" + item);
 		}
 	}
 
@@ -1150,7 +1146,15 @@ void Client::process_POST_CGI(std::string &resource_path, Location& location)
 
 	// we need to add the cookie to the environment variables if it exists
 	if(cookie.empty() == false)
-		new_env.push_back("HTTP_COOKIE=" + cookie);
+	{
+		std::stringstream ss(cookie);
+		std::string item;
+		while (std::getline(ss, item, ';'))
+		{
+			item = item[0] == ' ' ? item.substr(1) : item;
+			new_env.push_back("HTTP_COOKIE_" + item);
+		}
+	}
 
 	// we need to make a new char **argv
 	// we need to add the executable path and the resource path
@@ -1270,8 +1274,7 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 	for (size_t i = 0; i < env.size(); i++)
 		new_env.push_back(env[i]);
 
-	// first we need to make environment variables QUERY_STRING and REQUEST_METHOD and PATH_INFO to pass to the CGI script
-	new_env.push_back("QUERY_STRING=" + request_query_string);
+	// first we need to make environment variables REQUEST_METHOD and PATH_INFO to pass to the CGI script
 	new_env.push_back("REQUEST_METHOD=DELETE");
 	new_env.push_back("PATH_INFO=" + resource_path);
 	
@@ -1283,11 +1286,7 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 		while (std::getline(ss, item, ';'))
 		{
 			item = item[0] == ' ' ? item.substr(1) : item;
-
-			std::string header = item.substr(0, item.find("="));
-			std::string value = item.substr(item.find("=") + 1);
-
-			new_env.push_back("HTTP_COOKIE_" + header + "=" + value);
+			new_env.push_back("HTTP_COOKIE_" + item);
 		}
 	}
 
