@@ -237,22 +237,19 @@ void Server::server_loop()
 			int fd = this->clients[i].socket_fd;
 
 			// check for timeout
-			if (check_for_timeout(this->clients[i], i) == -1)
-				continue;
+			check_for_timeout(this->clients[i], i);
 
 			// we check if the socket is in the reads fd_set
 			// if so, it means that there is data to be read
 			// so we read the data
 			if (FD_ISSET(fd, &this->reads))
-				if(read_from_client(fd, i) == -1)
-					continue;
+				read_from_client(fd, i);
 
 			// we check if the socket is in the writes fd_set
 			// if so, it means that the socket is ready to be written to
 			// so we write to the socket
 			if (FD_ISSET(fd, &this->writes))
-				if(write_to_client(fd, i) == -1)
-					continue;
+				write_to_client(fd, i);
 		}
 	}
 }
@@ -304,7 +301,7 @@ void Server::accept_connection(int socket_fd, int index)
 	client.keep_alive_timeout = std::time(NULL);
 }
 
-int Server::read_from_client(int client_fd, int index)
+void Server::read_from_client(int client_fd, int index)
 {
 	// here we read data from the client in chunks
 
@@ -327,7 +324,7 @@ int Server::read_from_client(int client_fd, int index)
 	{
 		log("Failed to read from socket " + itoa(client_fd), RED);
 		close_connection(client_fd, index);
-		return -1;
+		return;
 	}
 
 	// if the bytes_read is 0, it means that the client has closed the connection
@@ -336,7 +333,7 @@ int Server::read_from_client(int client_fd, int index)
 	{
 		log("Connection On Socket " + itoa(client_fd) + " Closed By Client, Closing Connection ...", GREEN);
 		close_connection(client_fd, index);
-		return -1;
+		return;
 	}
 
 	// we add the data to the request of the client
@@ -356,12 +353,9 @@ int Server::read_from_client(int client_fd, int index)
 
 	// we update the timeout of the client
 	this->clients[index].keep_alive_timeout = std::time(NULL);
-
-	// we return the number of bytes read
-	return bytes_read;
 }
 
-int Server::write_to_client(int socket_fd, int index)
+void Server::write_to_client(int socket_fd, int index)
 {
 	// here we write data to the client in chunks
 	
@@ -399,7 +393,7 @@ int Server::write_to_client(int socket_fd, int index)
 	{
 		log("Failed to write to socket " + itoa(socket_fd), RED);
 		close_connection(socket_fd, index);
-		return -1;
+		return;
 	}
 
 	// we add the bytes_sent to the sent_size
@@ -440,12 +434,9 @@ int Server::write_to_client(int socket_fd, int index)
 
 	// we update the timeout of the client
 	this->clients[index].keep_alive_timeout = std::time(NULL);
-
-	// we return the number of bytes sent
-	return bytes_sent;
 }
 
-int Server::check_for_timeout(Client& client, int index)
+void Server::check_for_timeout(Client& client, int index)
 {
 	// here we check for timeout
 	// if the client has been inactive for more than the timeout value, we close the connection
@@ -462,13 +453,8 @@ int Server::check_for_timeout(Client& client, int index)
 		// we close the connection
 		close_connection(client.socket_fd, index);
 
-		// we return -1
-		return -1;
+		return;
 	}
-
-	// else it means that the client is still active
-	// we return 0
-	return 0;
 }
 
 void Server::close_connection(int socket_fd, int index)
