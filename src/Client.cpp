@@ -22,7 +22,6 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->sent_size = 0;
     this->keep_alive_timeout = std::time(NULL);
 
-    // initialize status codes
 	this->status_codes[200] = "OK";
     this->status_codes[201] = "Created";
     this->status_codes[204] = "No Content";
@@ -41,7 +40,6 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->status_codes[503] = "Service Unavailable";
 
 
-    // initialize mime types
     this->mime_types["html"] = "text/html";
     this->mime_types["css"] = "text/css";
     this->mime_types["js"] = "text/javascript";
@@ -133,7 +131,6 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
-    // parse and extract request parameters
     parse_request();
 
     // process the request and generate response
@@ -159,7 +156,6 @@ void Client::parse_request()
     std::stringstream ss(request);
     std::string line;
 
-	// we clear the request parameters to make sure they are empty
 	this->method.clear();
 	this->uri.clear();
 	this->protocol.clear();
@@ -171,8 +167,6 @@ void Client::parse_request()
 	this->request_query_string.clear();
 	this->cookie.clear();
    
-    // here we loop through the request line by line
-    // and parse the request header
     while(std::getline(ss, line)) {
 
         // remove carriage return from the line
@@ -181,9 +175,6 @@ void Client::parse_request()
         // check if we reached the end of request header
         if (line.empty())
             break;
-
-        // here we statrt to parse request headers
-        // we check for each header and extract the value
 
         // we parse method, uri and protocol
         if (line.find("HTTP") != std::string::npos)
@@ -202,33 +193,26 @@ void Client::parse_request()
 
         }
 
-        // we parse the host header
         if (line.find("Host: ") != std::string::npos)
             this->request_host = line.substr(6);
 
-        // we parse the connection header
         if (line.find("Connection: ") != std::string::npos)
             this->connection = line.substr(12);
 
-        // we parse the content-length header
         if (line.find("Content-Length: ") != std::string::npos)
             this->content_length = line.substr(16);
 
-        // we parse the content-type header
         if (line.find("Content-Type: ") != std::string::npos)
             this->content_type = line.substr(14);
 
-		// we parse the transfer-encoding header
 		if (line.find("Transfer-Encoding: ") != std::string::npos)
 			this->transfer_encoding = line.substr(19);
 
-        // we parse the cookie header
         if (line.find("Cookie: ") != std::string::npos)
             this->cookie = line.substr(8);
     }
 
 	// parse request body
-	// we clear the request body to make sure it is empty
 	this->request_body.clear();
 
 	// we read the request body
@@ -240,7 +224,6 @@ void Client::parse_request()
 	// so that if we have multiple requests in the same connection we dont have the previous request
 	this->request.clear();
 
-    // we log that we have parsed the request
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
 
 }
@@ -346,18 +329,11 @@ bool Client::check_request_validity()
 
 void Client::decode_chunked_body()
 {
-	// here we decode the chunked body
 	// we do this by reading the chunked body and decoding it
-
-	// we define the decoded body
 	std::string decoded_body;
 
-
-
-	// we define a stringstream to read the chunked body
 	std::stringstream ss(request_body);
 
-	// we loop through the chunked body
 	while(true)
 	{
 		// we define the chunk size
@@ -931,9 +907,7 @@ void Client::process_GET_CGI(std::string &resource_path)
 
 void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 {
-	// here we execute the CGI script
 
-	// we define the pipe file descriptors and status variable and filename
 	int pipe_fd[2];
 	int status;
 	std::string filename;
@@ -951,7 +925,6 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		return;
 	}
 
-	// we fork the process
 	pid_t pid = fork();
 	if (pid == -1)
 	{
@@ -962,8 +935,6 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		return;
 	}
 
-
-	// if the fork is the child process
 	if (pid == 0)
 	{
 		// we close the read end of the pipe
@@ -1013,14 +984,12 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			// we redirect the stdin to the read end of the fd
 			dup2(fd, STDIN_FILENO);
 
-			// we close the file
 			close(fd);
 		}
 
 		// we redirect the stdout to the write end of the pipe
 		dup2(pipe_fd[1], STDOUT_FILENO);
 
-		// we execute the CGI script
 		execve(path, argv, envp);
 
 		// if the execve fails we send a 500 response
@@ -1028,7 +997,6 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		std::exit(1);
 	}
 
-	// if the fork is the parent process
 	else
 	{
 		// we close the write end of the pipe
@@ -1302,16 +1270,11 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 		envp[i] = my_strdup(new_env[i]);
 	envp[new_env.size()] = NULL;
 
-	// we execute the CGI script
 	execute_CGI(executable_path.c_str(), argv, envp);
 
-	// we free the memory
-
-	// we free the memory allocated for the environment variables
 	for (size_t i = 0; i < new_env.size(); i++)
 		delete envp[i];
 
-	// we free the memory allocated for the argv
 	for (size_t i = 0; i < 2; i++)
 		delete argv[i];
 
@@ -1319,9 +1282,6 @@ void Client::process_DELETE_CGI(std::string &resource_path)
 
 void Client::delete_file(std::string &resource_path)
 {
-	// here we delete the file
-
-	// we try to delete
 	if (std::remove(resource_path.c_str()) != 0)
 	{
 		// if the file is not deleted we send a 500 response
@@ -1338,8 +1298,6 @@ void Client::delete_file(std::string &resource_path)
 
 int Client::recursive_deletion(std::string path)
 {
-	// here we recursively delete the directory
-
 	// we define the directory pointer and the directory entry
 	DIR *dir;
 	struct dirent *entry;
@@ -1349,10 +1307,7 @@ int Client::recursive_deletion(std::string path)
 
 	// we check if the directory is opened
 	if (dir == NULL)
-	{
-		// if the directory is not opened we return -1
 		return -1;
-	}
 
 	// we loop through the directory entries
 	while ((entry = readdir(dir)))
@@ -1370,32 +1325,21 @@ int Client::recursive_deletion(std::string path)
 		{
 			// we recursively delete the directory
 			if (recursive_deletion(full_path) != 0)
-			{
-				// if the directory is not deleted we return -1
 				return -1;
-			}
 		}
 		// if the entry is a file we delete the file
 		else
 		{
 			if(std::remove(full_path.c_str()) != 0)
-			{
-				// if the file is not deleted we return -1
 				return -1;
-			}
 		}
 	}
 
-	// we close the directory
 	closedir(dir);
 
 	// we delete the directory
 	if (std::remove(path.c_str()) != 0)
-	{
-		// if the directory is not deleted we return -1
 		return -1;
-	}
 
-	// we return 0 to indicate success
 	return 0;
 }
