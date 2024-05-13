@@ -90,7 +90,7 @@ void Server::init() {
 		}
 
 		// we log that the server has started
-		log("Server started on: http://" + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port), WHITE);
+		log("Server started on: http://" + int_to_ip(this->config.servers[i].host) + ":" + itoa(this->config.servers[i].port[0]), WHITE);
 	}
 
 	server_loop();
@@ -165,7 +165,7 @@ void Server::bind_server_address(int socket_fd, ServerConfig server)
 	server_address.sin_family = AF_INET;
 
 	// we set the port number to the port number in the server config
-	server_address.sin_port = htons(server.port);
+	server_address.sin_port = htons(server.port[0]);
 
 	// we set the IP address to host value in the server config
 	server_address.sin_addr.s_addr = htonl(server.host);

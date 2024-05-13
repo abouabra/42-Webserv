@@ -122,7 +122,18 @@ void Config::parse_config(std::string &config_file)
 			servers.push_back(server);
 		}
 	}
-
+	std::vector<ServerConfig> server_extra;
+	for (size_t i = 0; i < servers.size(); i++)
+	{
+		for (size_t j=1; j < servers[i].port.size(); j++)
+		{
+			ServerConfig server_dup = servers[i];
+			server_dup.port[0] = servers[i].port[j];
+			server_extra.push_back(server_dup);
+		}
+	}
+	for (size_t i = 0; i < server_extra.size(); i++)
+		servers.push_back(server_extra[i]);
 	// loop through the config and check for missing values
 	for (size_t i = 0; i < servers.size(); i++)
 	{
@@ -133,7 +144,7 @@ void Config::parse_config(std::string &config_file)
 			std::cout << "Server #" << i << std::endl;
 			throw(std::runtime_error("Missing host"));
 		}
-		if (servers[i].port == -1)
+		if (servers[i].port.empty())
 		{
 			// here we check if the port is missing
 			std::cout << "Server #" << i << std::endl;
@@ -189,7 +200,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 
 		// here we check if there is still data on the line
-		if (ss_2.peek() != EOF)
+		if (ss_2.peek() != EOF && key != "port:")
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid syntax"));
@@ -215,16 +226,20 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 		else if (key == "port:")
 		{
-			if (new_server.port != -1)
+			std::string result;
+			assign_if_valid(key, value, result, is_port_valid);
+			new_server.port.push_back(ft_atoi(result));
+			while(ss_2.peek() != EOF && ss_2 >> value)
+			{
+				assign_if_valid(key, value, result, is_port_valid);
+				new_server.port.push_back(ft_atoi(result));
+			}
+			std::sort(new_server.port.begin(), new_server.port.end());
+			if (std::adjacent_find(new_server.port.begin(), new_server.port.end()) != new_server.port.end())
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated port"));
 			}
-
-			// here we check if the port is valid
-			std::string result;
-			assign_if_valid(key, value, result, is_port_valid);
-			new_server.port = ft_atoi(result);
 		}
 
 		else if (key == "root:")
@@ -790,7 +805,6 @@ ServerConfig::ServerConfig()
 {
 	// setting up default values
 	host = -1;
-	port = -1;
 	max_body_size = DEFAULT_MAX_BODY_SIZE;
 }
 
