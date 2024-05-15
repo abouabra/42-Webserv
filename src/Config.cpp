@@ -220,8 +220,11 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 			// here we check if the host is valid
 			std::string result;
+			//***baani***
 			assign_if_valid(key, value, result, is_host_valid);
-			new_server.host = ip_to_int(result);
+			new_server.host = resolve_host(result.c_str());
+			if (new_server.host == -1)
+				throw(std::runtime_error("Cold not resolve hostname"));
 		}
 
 		else if (key == "port:")
@@ -330,10 +333,11 @@ void assign_if_valid(std::string &key, std::string &value, std::string &assign_t
 
 bool is_host_valid(std::string &host)
 {
+	//**baani**
 	//if the host is empty or doesn't contain 3 dots we return false
 	if (host.empty())
 		return false;
-	if(count_c(host, '.') != 3)
+	/*if(count_c(host, '.') != 3)
 		return false;
 
 	// here we check if the host contains only digits and dots
@@ -355,7 +359,7 @@ bool is_host_valid(std::string &host)
 	}
 
 	if (ss.peek() != EOF)
-		return false;
+		return false;*/
 	return true;
 }
 

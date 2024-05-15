@@ -1,6 +1,7 @@
 #include "../includes/Utils.hpp"
 #include <cstddef>
 #include <iostream>
+#include <netinet/in.h>
 
 void log(std::string message, int color)
 {
@@ -255,4 +256,19 @@ char* my_strdup(const std::string& str)
   char* arg = new char[len];
   std::strcpy(arg, str.c_str());  // Copy string content
   return arg;
+}
+
+int resolve_host(const char *node)
+{
+	struct addrinfo hints;
+	struct addrinfo *res = NULL;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
+
+	if (getaddrinfo(node, NULL, &hints, &res) != 0)
+		return -1;
+
+	struct sockaddr_in *sockaddr = (struct sockaddr_in*)res->ai_addr;
+	return htonl(sockaddr->sin_addr.s_addr);
 }

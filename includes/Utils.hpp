@@ -6,6 +6,9 @@
 #include <cstring>
 #include <netinet/in.h>
 #include <ctime>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 enum log_colors
 {
@@ -18,6 +21,9 @@ enum log_colors
 	WHITE,
 	RESET
 };
+
+//convert host name to ip address
+int resolve_host(const char *node);
 
 void log(std::string message, int color);
 
