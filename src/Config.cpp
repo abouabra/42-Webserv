@@ -138,34 +138,28 @@ void Config::parse_config(std::string &config_file)
 		servers.push_back(extra_servers[i]);
 
 
-	// loop through the config and check for missing values
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		// here we check if the server has all the required values
+		if (servers[i].host == -1 && servers[i].port.empty() == true)
+		{
+			std::cout << "Server #" << i << std::endl;
+			throw(std::runtime_error("Missing host or port"));
+		}
+
 		if (servers[i].host == -1)
-		{
-			// here we check if the host is missing
-			std::cout << "Server #" << i << std::endl;
-			throw(std::runtime_error("Missing host"));
-		}
-		if (servers[i].port.empty())
-		{
-			// here we check if the port is missing
-			std::cout << "Server #" << i << std::endl;
-			throw(std::runtime_error("Missing port"));
-		}
-		if (servers[i].root.empty())
-		{
-			// here we check if the root is missing
-			std::cout << "Server #" << i << std::endl;
-			throw(std::runtime_error("Missing root"));
-		}
+			servers[i].host = resolve_host(DEFAULT_HOST);
+
+		if (servers[i].port.empty() == true)
+			servers[i].port.push_back(DEFAULT_PORT);
+
+		if (servers[i].root.empty() == true)
+			servers[i].root = DEFAULT_ROOT;
+
 		if (servers[i].index.empty())
-		{
-			// here we check if the index is missing
-			std::cout << "Server #" << i << std::endl;
-			throw(std::runtime_error("Missing index"));
-		}
+			servers[i].index = DEFAULT_INDEX_FILE;
+
+		if ((int)servers[i].max_body_size == -1)
+			servers[i].max_body_size = DEFAULT_MAX_BODY_SIZE;
 	}
 }
 
@@ -222,11 +216,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 				throw(std::runtime_error("duplicated host"));
 			}
 
-			// here we check if the host is valid
-			std::string result;
-			//***baani***
-			assign_if_valid(key, value, result, is_host_valid);
-			new_server.host = resolve_host(result.c_str());
+			new_server.host = resolve_host(value);
 			if (new_server.host == -1)
 			{
 				std::cout << line << std::endl;
@@ -236,7 +226,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 		else if (key == "port:")
 		{
-			//***baani***
 			std::string result;
 			assign_if_valid(key, value, result, is_port_valid);
 			new_server.port.push_back(ft_atoi(result));
@@ -265,7 +254,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 		else if (key == "max_body_size:")
 		{
-			if (new_server.max_body_size != DEFAULT_MAX_BODY_SIZE)
+			if ((int)new_server.max_body_size != -1)
 			{
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated max_body_size"));
@@ -310,7 +299,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			location = parse_server_location(ss);
 
 			location.path = value;
-			// if the location methods are empty we add the GET method as default
 			if(location.methods.empty())
 				location.methods.push_back("GET");
 
@@ -339,37 +327,36 @@ void assign_if_valid(std::string &key, std::string &value, std::string &assign_t
 	}
 }
 
-bool is_host_valid(std::string &host)
-{
-	//**baani**
-	//if the host is empty or doesn't contain 3 dots we return false
-	if (host.empty())
-		return false;
-	/*if(count_c(host, '.') != 3)
-		return false;
+// bool is_host_valid(std::string &host)
+// {
+// 	//if the host is empty or doesn't contain 3 dots we return false
+// 	if (host.empty())
+// 		return false;
+// 	/*if(count_c(host, '.') != 3)
+// 		return false;
 
-	// here we check if the host contains only digits and dots
-	if(host.find_first_not_of("0123456789.") != std::string::npos)
-		return false;
+// 	// here we check if the host contains only digits and dots
+// 	if(host.find_first_not_of("0123456789.") != std::string::npos)
+// 		return false;
 
-	// here we split the host into tokens
-	std::stringstream ss(host);
-	std::string token;
+// 	// here we split the host into tokens
+// 	std::stringstream ss(host);
+// 	std::string token;
 	
-	// here we loop through the the 4 tokens
-	for (int i = 0; i < 4; i++)
-	{
-		std::getline(ss, token, '.');
-		if (token.empty())
-			return false;
-		if (ft_atoi(token) < 0 || ft_atoi(token) > 255)
-			return false;
-	}
+// 	// here we loop through the the 4 tokens
+// 	for (int i = 0; i < 4; i++)
+// 	{
+// 		std::getline(ss, token, '.');
+// 		if (token.empty())
+// 			return false;
+// 		if (ft_atoi(token) < 0 || ft_atoi(token) > 255)
+// 			return false;
+// 	}
 
-	if (ss.peek() != EOF)
-		return false;*/
-	return true;
-}
+// 	if (ss.peek() != EOF)
+// 		return false;*/
+// 	return true;
+// }
 
 bool is_port_valid(std::string &port)
 {
@@ -693,15 +680,26 @@ Location parse_server_location(std::stringstream &ss)
 				throw(std::runtime_error("Invalid config method"));
 			}
 
-			// then we parse the rest of the methods
-			parse_location_methods(ss_2, line, location.methods);
-
-			// check if the total number of pipes matches the number of methods on the vector -1
-			if(count_c(line, '|') != (int) location.methods.size() - 1)
+			while(ss_2.peek() != EOF && ss_2 >> value)
 			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("Invalid config method"));
+				if (is_valid_method(value) == false)
+				{
+					std::cout << line << std::endl;
+					throw(std::runtime_error("Invalid config method"));
+				}
+				location.methods.push_back(value);
 			}
+
+
+			// then we parse the rest of the methods
+			// parse_location_methods(ss_2, line, location.methods);
+
+			// // check if the total number of pipes matches the number of methods on the vector -1
+			// if(count_c(line, '|') != (int) location.methods.size() - 1)
+			// {
+			// 	std::cout << line << std::endl;
+			// 	throw(std::runtime_error("Invalid config method"));
+			// }
 
 			// check if there is duplicate methods
 			// first we sort the vector
@@ -713,12 +711,12 @@ Location parse_server_location(std::stringstream &ss)
 				throw(std::runtime_error("Invalid config method"));
 			}
 
-			// Check if the last value read was a separator
-			if (!ss_2.eof() && value != "|")
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("Invalid config method separator"));
-			}
+			// // Check if the last value read was a separator
+			// if (!ss_2.eof())
+			// {
+			// 	std::cout << line << std::endl;
+			// 	throw(std::runtime_error("Invalid config method separator"));
+			// }
 		}
 		else if (key == "redirect_URL:")
 		{
@@ -777,35 +775,34 @@ bool is_valid_method(std::string &method)
 	return true;
 }
 
-void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
-{
-	size_t passed_pipes = 0;
-	std::string value;
+// void parse_location_methods(std::stringstream &ss_2, std::string &line, std::vector<std::string> &methods)
+// {
+// 	std::string value;
 
-	while (ss_2 >> value)
-	{
-		// Check pipe order
-		if (value == "|")
-		{
-			passed_pipes++;
+// 	while (ss_2 >> value)
+// 	{
+// 		// Check pipe order
+// 		if (value == "|")
+// 		{
+// 			passed_pipes++;
 
-			// Check if there is a method before the pipe
-			if (methods.size() != passed_pipes)
-			{
-				std::cout << line << std::endl;
-				throw(std::runtime_error("Invalid config method"));
-			}
-			continue;
-		}
+// 			// Check if there is a method before the pipe
+// 			if (methods.size() != passed_pipes)
+// 			{
+// 				std::cout << line << std::endl;
+// 				throw(std::runtime_error("Invalid config method"));
+// 			}
+// 			continue;
+// 		}
 
-		else if (!is_valid_method(value))
-		{
-			std::cout << line << std::endl;
-			throw(std::runtime_error("Invalid config method"));
-		}
-		methods.push_back(value);
-	}
-}
+// 		else if (!is_valid_method(value))
+// 		{
+// 			std::cout << line << std::endl;
+// 			throw(std::runtime_error("Invalid config method"));
+// 		}
+// 		methods.push_back(value);
+// 	}
+// }
 
 
 /*
@@ -817,7 +814,7 @@ ServerConfig::ServerConfig()
 {
 	// setting up default values
 	host = -1;
-	max_body_size = DEFAULT_MAX_BODY_SIZE;
+	max_body_size = -1;
 }
 
 ServerConfig::~ServerConfig()

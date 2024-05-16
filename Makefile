@@ -6,7 +6,7 @@ OBJ_DIR = obj/
 OSRC = $(addprefix $(OBJ_DIR), $(SRC:.cpp=.o))
 
 # Fast Flags
-CFLAGS = -Wall -Wextra -Werror -O3 -Ofast -std=c++98  #-fsanitize=address -g
+CFLAGS = -Wall -Wextra -Werror -O3 -Ofast -std=c++98  -D DEFAULT_ROOT=\"$(PWD)/assets/server_1/\"    #-fsanitize=address -g
 
 NAME = webserv
 

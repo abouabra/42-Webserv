@@ -250,10 +250,8 @@ void Client::process_request() {
 	}
 
 	// here we check if the URI is matched with a location
-	// if it did return -1 we send a 404 response
 	int location_idx = find_matching_location();
-	if(location_idx == -1)
-		return;
+	
 
 	// here we check if location is has a redirect
 	// if it does we send a 301 response
@@ -446,11 +444,14 @@ int Client::find_matching_location()
 		}
 	}
 
-	// if no location matched we send a 404 response
 	if(matched_index == -1)
 	{
-		send_error_response(404);
-		return -1;
+		Location location;
+
+		location.path = "/";
+		location.methods.push_back("GET");
+		config.locations.push_back(location);
+		matched_index = 0;
 	}
 
 	// we return the matched index
@@ -602,13 +603,12 @@ void Client::process_directory(Location& location, std::string full_path)
 	if(has_uri_trailing_slash() == false)
 		return;
 
-	// we check if the index file is defined in the location
-	// and if it exists in the directory
-	// if all requirements are met we serve the index file
-	if(location.index.empty() == false && access((full_path + location.index).c_str(), F_OK) != -1)
+	std::string index = location.index.empty() ? config.index : location.index;
+
+	if(access((full_path + index).c_str(), F_OK) != -1)
 	{
 		// process the file
-		process_file(full_path + location.index, location);
+		process_file(full_path + index, location);
 		return;
 	}
 
@@ -937,6 +937,12 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 
 	if (pid == 0)
 	{
+		// change the working directory to the resource path
+		std::string resource_path = std::string(argv[1]);
+		std::string resource_path_dir = resource_path.substr(0, resource_path.find_last_of("/") + 1);
+		chdir(resource_path_dir.c_str());
+
+
 		// we close the read end of the pipe
 		close(pipe_fd[0]);
 
@@ -1159,6 +1165,7 @@ void Client::process_DELETE(Location& location)
 	// we get the full path of the resource
 	std::string full_path = construct_resource_path(location);
 
+
 	// we check if the resource exists
 	// if it fails send a 404 response and return
 	if (verify_resource_existence(full_path) == false)
@@ -1183,13 +1190,10 @@ void Client::process_directory_for_DELETE(Location& location, std::string &full_
 		return;
 	}
 
-	// we check if the index file is defined in the location
-	// and if it exists in the directory and if it is a dynamic file
-	// if all requirements are met we serve the cgi index file
-	// if not we send a 403 response
-	if(location.index.empty() == false && access((full_path + location.index).c_str(), F_OK) != -1)
+	std::string index = location.index.empty() ? config.index : location.index;
+	std::string new_path = full_path + index;
+	if(access((new_path).c_str(), F_OK) != -1)
 	{
-		std::string new_path = full_path + location.index;
 		if(should_be_processed_by_cgi(new_path) == true)
 			serve_dynamic_content(new_path, location);
 		else
@@ -1200,10 +1204,6 @@ void Client::process_directory_for_DELETE(Location& location, std::string &full_
 	// here we try to delete the directory
 	if(recursive_deletion(full_path) != 0)
 	{
-		// if it fails we check why it failed
-		// we check if its because write access on the folder
-		// if it is we send a 500 response
-		// otherwise we send a 403 response
 		if(access(full_path.c_str(), W_OK) == 0)
 			send_error_response(500);
 		else

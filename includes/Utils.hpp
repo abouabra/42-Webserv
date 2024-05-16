@@ -23,7 +23,7 @@ enum log_colors
 };
 
 //convert host name to ip address
-int resolve_host(const char *node);
+int resolve_host(std::string host);
 
 void log(std::string message, int color);
 

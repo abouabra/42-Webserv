@@ -257,16 +257,18 @@ char* my_strdup(const std::string& str)
   std::strcpy(arg, str.c_str());  // Copy string content
   return arg;
 }
-
-int resolve_host(const char *node)
+int resolve_host(std::string host)
 {
+	if (host.empty())
+		return -1;
+
 	struct addrinfo hints;
 	struct addrinfo *res = NULL;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
-	if (getaddrinfo(node, NULL, &hints, &res) != 0)
+	if (getaddrinfo(host.c_str(), NULL, &hints, &res) != 0)
 		return -1;
 
 	struct sockaddr_in *sockaddr = (struct sockaddr_in*)res->ai_addr;
