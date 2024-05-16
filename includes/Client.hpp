@@ -25,6 +25,9 @@ public:
     int host;
     int port;
 
+    std::string request_file_name;
+    int request_fd;
+    bool write_to_file;
 
 
 

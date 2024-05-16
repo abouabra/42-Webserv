@@ -6,6 +6,7 @@
 #include <sys/fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 Server::Server(Config config, char **ev) : config(config) {
     this->max_fd = 0;
@@ -275,8 +276,6 @@ void Server::accept_connection(int socket_fd, int index)
 		throw std::runtime_error("failed to accept connection");
 	}
 
-	// we log that a connection has been accepted
-	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 	
 	// we set the client socket to non-blocking
 	set_socket_to_non_blocking(client_socket_fd);
@@ -299,6 +298,9 @@ void Server::accept_connection(int socket_fd, int index)
 
 	// we set the timeout for client
 	client.keep_alive_timeout = std::time(NULL);
+
+	// we log that a connection has been accepted
+	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 }
 
 void Server::read_from_client(int client_fd, int index)
@@ -337,12 +339,35 @@ void Server::read_from_client(int client_fd, int index)
 	}
 
 	// we add the data to the request of the client
-	this->clients[index].request += std::string(buffer, bytes_read);
+
+
+	if(this->clients[index].write_to_file == false)
+		this->clients[index].request += std::string(buffer, bytes_read);
+	else
+	{
+		write(this->clients[index].request_fd, buffer, bytes_read);
+	}
+
+
+
+	if (this->clients[index].write_to_file == false && this->clients[index].request.find("\r\n\r\n") != std::string::npos)
+	{
+		this->clients[index].write_to_file = true;
+
+		size_t pos = this->clients[index].request.find("\r\n\r\n");
+
+		std::string body = this->clients[index].request.substr(pos + 4);
+		this->clients[index].request =  this->clients[index].request.substr(0, pos + 4);
+		std::cout << "FOUND: |" << body << "|" << std::endl;
+		write(this->clients[index].request_fd, body.c_str(), body.size());
+	}
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
 	if(bytes_read < BUFFER_SIZE)
 	{
+		this->clients[index].write_to_file = false;
+
 		// we process the request
 		// this function will parse and process the request then generate a response
 		this->clients[index].handle_request();

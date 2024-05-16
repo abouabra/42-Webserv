@@ -8,6 +8,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <sys/fcntl.h>
 #include <unistd.h>
 #include <vector>
 
@@ -22,6 +23,11 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->sent_size = 0;
     this->keep_alive_timeout = std::time(NULL);
 
+	this->request_file_name = GenerateUniqueFileName();
+	this->request_fd = open(request_file_name.c_str(), O_CREAT | O_WRONLY | O_APPEND, 0666);
+	this->write_to_file = false;
+
+	this->status_codes[100] = "Continue";
 	this->status_codes[200] = "OK";
     this->status_codes[201] = "Created";
     this->status_codes[204] = "No Content";
@@ -100,6 +106,14 @@ Client &Client::operator=(Client const &obj)
 
         this->status_codes = obj.status_codes;
         this->mime_types = obj.mime_types;
+
+		this->request_query_string = obj.request_query_string;
+		this->transfer_encoding = obj.transfer_encoding;
+
+		this->env = obj.env;
+
+		this->request_file_name = obj.request_file_name;
+		this->request_fd = obj.request_fd;
     }
     return *this;
 }
