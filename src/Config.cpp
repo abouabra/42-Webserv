@@ -122,18 +122,22 @@ void Config::parse_config(std::string &config_file)
 			servers.push_back(server);
 		}
 	}
-	std::vector<ServerConfig> server_extra;
+
+	// loop and add extra servers for each port
+	std::vector<ServerConfig> extra_servers;
 	for (size_t i = 0; i < servers.size(); i++)
 	{
-		for (size_t j=1; j < servers[i].port.size(); j++)
+		for (size_t j = 1; j < servers[i].port.size(); j++)
 		{
-			ServerConfig server_dup = servers[i];
-			server_dup.port[0] = servers[i].port[j];
-			server_extra.push_back(server_dup);
+			ServerConfig new_server(servers[i]);
+			new_server.port[0] = servers[i].port[j];
+			extra_servers.push_back(new_server);
 		}
 	}
-	for (size_t i = 0; i < server_extra.size(); i++)
-		servers.push_back(server_extra[i]);
+	for (size_t i = 0; i < extra_servers.size(); i++)
+		servers.push_back(extra_servers[i]);
+
+
 	// loop through the config and check for missing values
 	for (size_t i = 0; i < servers.size(); i++)
 	{
@@ -224,11 +228,15 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			assign_if_valid(key, value, result, is_host_valid);
 			new_server.host = resolve_host(result.c_str());
 			if (new_server.host == -1)
+			{
+				std::cout << line << std::endl;
 				throw(std::runtime_error("Cold not resolve hostname"));
+			}
 		}
 
 		else if (key == "port:")
 		{
+			//***baani***
 			std::string result;
 			assign_if_valid(key, value, result, is_port_valid);
 			new_server.port.push_back(ft_atoi(result));
