@@ -105,6 +105,9 @@ void Config::parse_config(std::string &config_file)
 	std::stringstream ss(config_file);
 	std::string line;
 
+	if (config_file.empty())
+		throw(std::runtime_error("Empty config file"));
+
 	while(std::getline(ss, line))
 	{
 		//we check for the server keyword

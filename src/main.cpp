@@ -13,10 +13,9 @@ int main(int ac, char **av, char **ev)
 		return 1;
 	}
 
+	file_name = DEFAULT_CONFIG;
 	if(ac == 2)
 		file_name = av[1];
-	else
-		file_name = "./config/Default.conf";
 
 	try
 	{

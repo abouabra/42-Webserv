@@ -10,10 +10,7 @@
 #include <iostream>
 #include "Config.hpp"
 #include "Client.hpp"
-
-#define BUFFER_SIZE 4096
-#define SELECT_TIMEOUT 10
-#define REQUEST_TIMEOUT 30
+#include "WebServ.hpp"
 
 class Server {
 public:
