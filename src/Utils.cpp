@@ -35,112 +35,27 @@ std::string itoa(int i)
 }
 
 
-std::string read_file3(std::string name)
+std::string read_file(std::string name)
 {
 	std::fstream file(name.c_str(), std::ios::in);
+	std::string content;
 	std::string line;
-	char buffer[BUFFER_SIZE];
 
 	if(!file.is_open())
 		throw std::runtime_error("Error: Could not open file: " + name);
 
-	file.read(buffer, BUFFER_SIZE);
-	// file.close();
+	while(std::getline(file, line))
+	{
+		content += line;
+		if(file.peek() != EOF)
+			content += "\n";
+	}
 
-	std::string content(buffer);
+	file.close();
 	return content;
 }
 
-// Function to read a file with persistent offset tracking
-std::string read_file2(std::string name) {
-	std::cout << name << std::endl;
 
-    static std::map<std::string, std::streampos> fileOffsets;
-
-    std::fstream file(name.c_str(), std::ios::in);
-
-    if (!file.is_open()) {
-        throw std::runtime_error("Error: Could not open file: " + name);
-    }
-
-    // Check if offset exists for this file in the map
-	std::map<std::string, std::streampos>::iterator it = fileOffsets.find(name);
-
-    if (it != fileOffsets.end()) {
-        // File offset found, seek to it
-        file.seekg(it->second);
-    } else {
-        // New file, start from beginning
-        fileOffsets[name] = file.tellg(); // Store initial offset
-    }
-
-    char buffer[BUFFER_SIZE];
-
-    file.read(buffer, BUFFER_SIZE);
-        // content.append(buffer, file.gcount()); // Append read bytes
-	if (file.eof())
-	{
-		fileOffsets.erase(name); // Remove offset for this file
-	}
-
-
-	std::string content(buffer);
-
-	// if(name == "/home/ayman/Documents/42/backserve/assets/server_1/img-1.png")
-	// 	std::cout << content << std::endl;
-
-
-
-    // Update offset for future calls
-    fileOffsets[name] = file.tellg(); // Store current end-of-file position
-
-    file.close(); // Close the file
-
-    return content;
-}
-
-
-int getFileSize(std::string filename)
-{
-    std::fstream file(filename.c_str(), std::ios::in | std::ios::ate);
-    int fileSize = file.tellg();
-    file.close();
-	std::cout << "NAME: " << filename << " SIZE: " << fileSize << std::endl;
-    return fileSize;
-}
-
-std::string read_file(std::string name) {
-	
-	static std::map<std::string, int> fds;
-
-	if(fds.find(name) == fds.end())
-	{
-		int fd = open(name.c_str(), O_RDONLY);
-		if (fd < 0)
-			throw std::runtime_error("Error: Could not open file: " + name);
-		fds[name] = fd;
-	}
-
-	int fd = fds[name];
-
-    char buffer[BUFFER_SIZE];
-	std::memset(buffer, 0, BUFFER_SIZE);
-
-    int bytes_read = read(fd, buffer, BUFFER_SIZE);
-	
-	if (bytes_read < BUFFER_SIZE)
-	{
-		fds.erase(name); // Remove offset for this file
-		close(fd);
-	}
-
-	std::string content = std::string(buffer, bytes_read);
-
-	// if(name == "/home/ayman/Documents/42/backserve/assets/server_1/img-1.png")
-	// 	std::cout << content << std::endl;
-
-    return content;
-}
 
 int count_c(std::string str, char c)
 {

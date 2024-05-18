@@ -7,8 +7,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <cstdio>
-
-#define CGI_TIMEOUT 30
+#include "WebServ.hpp"
 
 class Client {
 public:
@@ -25,12 +24,7 @@ public:
     int host;
     int port;
 
-    std::string request_file_name;
-    int request_fd;
-    bool write_to_file;
 
-    bool parse_request_switch;
-    bool should_send_headers;
 
 
     // Request variables
@@ -47,7 +41,6 @@ public:
     std::string request_body;
     std::string request_query_string;
     time_t keep_alive_timeout;
-    std::string body_size;
 
     // Response variables
     int response_status_code;
@@ -68,7 +61,6 @@ public:
     Client& set_status_code(int status_code);
     Client& set_body(std::string body);
     Client& set_content_type(std::string content_type);
-    Client& set_body_size(std::string body_size);
 
 
     void build_response();

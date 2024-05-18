@@ -6,7 +6,6 @@
 #include <sys/fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
-#include <unistd.h>
 
 Server::Server(Config config, char **ev) : config(config) {
     this->max_fd = 0;
@@ -276,6 +275,8 @@ void Server::accept_connection(int socket_fd, int index)
 		throw std::runtime_error("failed to accept connection");
 	}
 
+	// we log that a connection has been accepted
+	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 	
 	// we set the client socket to non-blocking
 	set_socket_to_non_blocking(client_socket_fd);
@@ -298,9 +299,6 @@ void Server::accept_connection(int socket_fd, int index)
 
 	// we set the timeout for client
 	client.keep_alive_timeout = std::time(NULL);
-
-	// we log that a connection has been accepted
-	log("New Connection From: " + int_to_ip(ntohl(client_address.sin_addr.s_addr)) + " Assigned to Socket: " + itoa(client_socket_fd), GREEN);
 }
 
 void Server::read_from_client(int client_fd, int index)
@@ -339,32 +337,16 @@ void Server::read_from_client(int client_fd, int index)
 	}
 
 	// we add the data to the request of the client
-
-
-	if(this->clients[index].write_to_file == false)
-		this->clients[index].request += std::string(buffer, bytes_read);
-	else
-	{
-		write(this->clients[index].request_fd, buffer, bytes_read);
-	}
-
-
-
-	if (this->clients[index].write_to_file == false && this->clients[index].request.find("\r\n\r\n") != std::string::npos)
-	{
-		this->clients[index].write_to_file = true;
-		
-		size_t pos = this->clients[index].request.find("\r\n\r\n");
-
-		std::string body = this->clients[index].request.substr(pos + 4);
-		this->clients[index].request =  this->clients[index].request.substr(0, pos + 2);
-		write(this->clients[index].request_fd, body.c_str(), body.size());
-	}
+	this->clients[index].request += std::string(buffer, bytes_read);
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
 	if(bytes_read < BUFFER_SIZE)
 	{
+		// we process the request
+		// this function will parse and process the request then generate a response
+		this->clients[index].handle_request();
+
 		// we add the socket to the writes fd_set
 		FD_SET(client_fd, &this->writes);
 	}
@@ -376,18 +358,34 @@ void Server::read_from_client(int client_fd, int index)
 void Server::write_to_client(int socket_fd, int index)
 {
 	// here we write data to the client in chunks
+	
+	// we get the response of the client for easier access
+	std::string response = this->clients[index].response;
 
-	// we process the request
-	// this function will parse and process the request then generate a response
-	this->clients[index].handle_request();
+	// we get the size of the response
+	size_t response_size = response.size();
 
-	if (this->clients[index].should_send_headers == true)
-		this->clients[index].should_send_headers = false;
+	// we get the size of the response that has been sent
+	size_t sent_size = this->clients[index].sent_size;
 
-	// std::cout << "Response: " << this->clients[index].response << std::endl;
-	std::cout << "sent_size: " << this->clients[index].sent_size << std::endl;
+	// we get the remaining size of the response
+	size_t remaining_size = response_size - sent_size;
 
-	int bytes_sent = send(socket_fd, clients[index].response.c_str(), clients[index].response.size(), 0);
+	// we get the size of the data to be sent
+	size_t send_size = remaining_size > BUFFER_SIZE ? BUFFER_SIZE : remaining_size;
+
+	// we get the data to be sent
+	std::string data = response.substr(sent_size, send_size);
+
+	// we convert the data to a c string
+	const char *buffer = data.c_str();
+
+	// we write the data using send with the following parameters:
+	// socket_fd: the socket file descriptor
+	// buffer: the buffer to store the data
+	// send_size: the size of the data
+	// 0: flags (default)
+	int bytes_sent = send(socket_fd, buffer, send_size, 0);
 
 	// if the bytes_sent is less than 0, it means that there was an error
 	// so we log the error then we close the connection and return -1
@@ -398,7 +396,12 @@ void Server::write_to_client(int socket_fd, int index)
 		return;
 	}
 
-	if (this->clients[index].sent_size < BUFFER_SIZE)
+	// we add the bytes_sent to the sent_size
+	this->clients[index].sent_size += bytes_sent;
+
+	// we check if the sent_size is equal to the response_size
+	// this will mean that we have sent all the data
+	if (this->clients[index].sent_size == response_size)
 	{
 		// log the response
     	log("Response Sent To: " + clients[index].request_host + ", Status Code: " + itoa(clients[index].response_status_code) + " " + clients[index].status_codes[clients[index].response_status_code], CYAN);
@@ -407,17 +410,9 @@ void Server::write_to_client(int socket_fd, int index)
 		this->clients[index].request.clear();
 		this->clients[index].response.clear();
 
+		// we set the sent_size to 0
+		// this will reset the sent_size for the next request
 		this->clients[index].sent_size = 0;
-
-
-
-		this->clients[index].write_to_file = false;
-		close(this->clients[index].request_fd);
-		this->clients[index].request_fd = open(this->clients[index].request_file_name.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
-
-		this->clients[index].parse_request_switch = true;
-		this->clients[index].should_send_headers = true;
-
 
 		// we check if the connection is close
 		// it means that the client wants to close the connection
@@ -472,9 +467,6 @@ void Server::close_connection(int socket_fd, int index)
 
 	// we use the close function with the socket_fd as the parameter
 	close(socket_fd);
-
-	close(this->clients[index].request_fd);
-	std::remove(this->clients[index].request_file_name.c_str());
 
 	// we remove the client from the clients vector
 	this->clients.erase(this->clients.begin() + index);

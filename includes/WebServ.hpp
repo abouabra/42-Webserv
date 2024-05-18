@@ -5,6 +5,7 @@
 #define SELECT_TIMEOUT 10
 #define REQUEST_TIMEOUT 30
 
+#define CGI_TIMEOUT 30
 
 #define DEFAULT_MAX_BODY_SIZE 1000000
 #define DEFAULT_INDEX_FILE "index.html"

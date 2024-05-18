@@ -9,10 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include <arpa/inet.h>
 #include "WebServ.hpp"
-#include <unistd.h>
-#include <fcntl.h>
 
 enum log_colors
 {
@@ -72,5 +69,3 @@ std::string GenerateUniqueFileName();
 std::string decode_URL(std::string URL);
 
 char* my_strdup(const std::string& str);
-
-int getFileSize(std::string filename);

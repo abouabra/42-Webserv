@@ -8,7 +8,6 @@
 #include <map>
 #include <sstream>
 #include <string>
-#include <sys/fcntl.h>
 #include <unistd.h>
 #include <vector>
 
@@ -23,14 +22,6 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config) {
     this->sent_size = 0;
     this->keep_alive_timeout = std::time(NULL);
 
-	this->request_file_name = GenerateUniqueFileName();
-	this->request_fd = open(request_file_name.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
-	this->write_to_file = false;
-
-	this->parse_request_switch = true;
-	this->should_send_headers = true;
-
-	this->status_codes[100] = "Continue";
 	this->status_codes[200] = "OK";
     this->status_codes[201] = "Created";
     this->status_codes[204] = "No Content";
@@ -109,21 +100,6 @@ Client &Client::operator=(Client const &obj)
 
         this->status_codes = obj.status_codes;
         this->mime_types = obj.mime_types;
-
-		this->request_query_string = obj.request_query_string;
-		this->transfer_encoding = obj.transfer_encoding;
-
-		this->env = obj.env;
-
-		this->request_file_name = obj.request_file_name;
-		this->request_fd = obj.request_fd;
-
-		this->write_to_file = obj.write_to_file;
-
-		this->parse_request_switch = obj.parse_request_switch;
-		this->should_send_headers = obj.should_send_headers;
-		this->body_size = obj.body_size;
-
     }
     return *this;
 }
@@ -144,43 +120,18 @@ Client& Client::set_content_type(std::string content_type) {
     return *this;
 }
 
-Client& Client::set_body_size(std::string body_size)
-{
-	this->body_size = body_size;
-	return *this;
-}
-
-
 void Client::build_response() {
-
-	if(this->should_send_headers == false)
-	{
-		this->response = this->response_body;
-		this->sent_size = this->response.size();
-		return;
-	}
-
     this->response = "HTTP/1.1 " + itoa(this->response_status_code) + " " + status_codes[response_status_code] + "\r\n";
     this->response += "Connection: " + this->connection + "\r\n";
-	
-	if(this->body_size.empty() == false)
-	{
-		this->response += "Content-Length: " + this->body_size + "\r\n";
-		this->body_size.clear();
-	}
-	else
-    	this->response += "Content-Length: " + itoa(this->response_body.size()) + "\r\n";
-
+    this->response += "Content-Length: " + itoa(this->response_body.size()) + "\r\n";
     this->response += "Content-Type: " + this->response_content_type + "\r\n";
     this->response += "\r\n";
     this->response += this->response_body;
-	this->sent_size = this->response.size();
 }
 
 void Client::handle_request()
 {
-	if (this->parse_request_switch)
-    	parse_request();
+    parse_request();
 
     // process the request and generate response
     process_request();
@@ -261,23 +212,25 @@ void Client::parse_request()
             this->cookie = line.substr(8);
     }
 
-	this->parse_request_switch = false;
-	// // parse request body
-	// this->request_body.clear();
+	// parse request body
+	this->request_body.clear();
 
-	// // we read the request body
-	// std::stringstream body_ss;
-	// body_ss << ss.rdbuf(); // Move what's inside the stream until EOF to body_ss
-	// this->request_body = body_ss.str();
+	// we read the request body
+	std::stringstream body_ss;
+	body_ss << ss.rdbuf(); // Move what's inside the stream until EOF to body_ss
+	this->request_body = body_ss.str();
 
-	// // we clear the request to make sure it is empty
-	// // so that if we have multiple requests in the same connection we dont have the previous request
-	// this->request.clear();
+	// we clear the request to make sure it is empty
+	// so that if we have multiple requests in the same connection we dont have the previous request
+	this->request.clear();
+
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
+
 }
 
 void Client::process_request() {
     // here we process the request and generate the response
+	// std::cout << request << std::endl;
 
     // here we have multiple checks if the request is valid
     // if not we send a 4xx response
@@ -298,6 +251,7 @@ void Client::process_request() {
 
 	// here we check if the URI is matched with a location
 	int location_idx = find_matching_location();
+	
 
 	// here we check if location is has a redirect
 	// if it does we send a 301 response
@@ -871,7 +825,6 @@ void Client::serve_static_content(std::string &resource_path)
 	try {
 		data = read_file(resource_path);
 	}
-
 	// if page is not found we send a generic error page
 	catch(const std::exception& e) {
 		return send_error_response(404);
@@ -881,7 +834,6 @@ void Client::serve_static_content(std::string &resource_path)
 	this->set_status_code(200)
 		.set_content_type(mime_types[extension])
 		.set_body(data)
-		.set_body_size(itoa(getFileSize(resource_path)))
 		.build_response();
 }
 
@@ -958,12 +910,12 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 
 	int pipe_fd[2];
 	int status;
-	// std::string filename;
+	std::string filename;
 	
 	// we check if the method is POST
 	// if it is we generate a unique file name
-	// if(method == "POST")
-	// 	filename = GenerateUniqueFileName();
+	if(method == "POST")
+		filename = GenerateUniqueFileName();
 
 	// we create the pipe
 	if(pipe(pipe_fd) < 0)
@@ -1001,32 +953,32 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		{
 			// we create a a temporary file to write the request body
 			// this is done bacause writing to file is waaaay faster than writing to pipe
-			// int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
-			// if(fd < 0)
-			// {
-			// 	// if the file fails to open we send a 500 response
-			// 	send_error_response(500);
-			// 	std::exit(1);
-			// }
+			int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+			if(fd < 0)
+			{
+				// if the file fails to open we send a 500 response
+				send_error_response(500);
+				std::exit(1);
+			}
 
-			// // we write the request body to the file
-			// int bytes = write(fd, request_body.c_str(), request_body.size());
+			// we write the request body to the file
+			int bytes = write(fd, request_body.c_str(), request_body.size());
 
 			// if the bytes written is less than 0 it means an error occurred
 			// we send a 500 response, close the pipe and return
-			// if (bytes < 0)
-			// {
-			// 	send_error_response(500);
-			// 	close(pipe_fd[1]);
-			// 	close(fd);
-			// 	return;
-			// }
+			if (bytes < 0)
+			{
+				send_error_response(500);
+				close(pipe_fd[1]);
+				close(fd);
+				return;
+			}
 
-			// // we close the file
-			// close(fd);
+			// we close the file
+			close(fd);
 
 			// now we re open the file in read only mode
-			int fd = open(this->request_file_name.c_str(), O_RDONLY);
+			fd = open(filename.c_str(), O_RDONLY);
 
 			// if the file fails to open we send a 500 response
 			if(fd < 0)
@@ -1036,8 +988,6 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 			}
 
 			// we redirect the stdin to the read end of the fd
-
-
 			dup2(fd, STDIN_FILENO);
 
 			close(fd);
@@ -1137,8 +1087,8 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 
 		// we check if the method is POST
 		// if it is we remove the temporary file
-		// if(method == "POST")
-		// 	std::remove(filename.c_str());
+		if(method == "POST")
+			std::remove(filename.c_str());
 		
 
 		// we set the raw received response from the CGI script as the response

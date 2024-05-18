@@ -8,8 +8,6 @@
 #include "Utils.hpp"
 #include "WebServ.hpp"
 
-
-
 class Location {
 public:
 	std::string path;
