@@ -62,6 +62,10 @@ void Server::init() {
     // here we loop through the servers in the config
     for (size_t i=0; i < this->config.servers.size(); i++) {
 
+		if(should_make_socket_for_server(this->config.servers[i], i) != -1) {
+			continue;
+		}
+
 		// here we create a socket for each server
 		int socket_fd = create_server_socket();
 		
@@ -95,7 +99,22 @@ void Server::init() {
 
 	server_loop();
 
-}    
+}
+
+int Server::should_make_socket_for_server(ServerConfig current, int index)
+{
+	// check if there previous server with the same host and port
+	for(int i = 0; i < index; i++)
+	{
+		if(this->config.servers[i].host == current.host && this->config.servers[i].port[0] == current.port[0])
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+
 
 int Server::create_server_socket()
 {
@@ -287,7 +306,8 @@ void Server::accept_connection(int socket_fd, int index)
 	// we create a Client object with the client_socket_fd, client address and port and the server config that the client is connected to
 	// we also set the env variable of the client to the env variable of the server
 	// and add it to the clients vector
-	Client client(client_socket_fd, ntohl(client_address.sin_addr.s_addr), ntohs(client_address.sin_port), this->config.servers[index]);
+	Client client(client_socket_fd, ntohl(client_address.sin_addr.s_addr), ntohs(client_address.sin_port), this->config.servers[index], this->config);
+	
 	// we want to pass the environment variables to the client but each client must have its own copy
 	client.env = std::vector<std::string>(this->env);
 	this->clients.push_back(client);

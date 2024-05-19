@@ -28,6 +28,7 @@ class ServerConfig {
 public:
 	int host;
 	std::vector<int> port;
+	std::vector<std::string> server_names;
 	std::string root;
 	size_t max_body_size;
 	std::string index;

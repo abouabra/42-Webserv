@@ -12,10 +12,11 @@
 class Client {
 public:
     Client();
-    Client(int socket_fd, int host, int port, ServerConfig config);
+    Client(int socket_fd, int host, int port, ServerConfig config, Config global_config);
     ~Client();
     Client &operator=(Client const &obj);
 
+	Config global_config;
     ServerConfig config;
     std::vector<std::string> env;
 

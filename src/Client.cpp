@@ -14,11 +14,13 @@
 Client::Client() {
 }
 
-Client::Client(int socket_fd, int host, int port, ServerConfig config) {
+Client::Client(int socket_fd, int host, int port, ServerConfig config, Config global_config)
+{
     this->socket_fd = socket_fd;
     this->host = host;
     this->port = port;
     this->config = config;
+	this->global_config = global_config;
     this->sent_size = 0;
     this->keep_alive_timeout = std::time(NULL);
 
@@ -226,6 +228,28 @@ void Client::parse_request()
 
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
 
+
+
+	// match host to server name
+	// if not found we choose the first server block
+	int server_idx = 0;
+	bool found = false;
+	for (size_t i = 0; i < this->global_config.servers.size() && !found; i++)
+	{
+		if(this->global_config.servers[i].host == config.host && this->global_config.servers[i].port[0] == config.port[0])
+		{
+			for (size_t j = 0; j < this->global_config.servers[i].server_names.size() && !found; j++)
+			{
+				if(this->global_config.servers[i].server_names[j] == this->request_host)
+				{
+					server_idx = i;
+					found = true;
+					break;
+				}
+			}
+		}
+	}
+	config = this->global_config.servers[server_idx];
 }
 
 void Client::process_request() {

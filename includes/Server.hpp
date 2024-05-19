@@ -21,7 +21,7 @@ public:
 
 	std::vector<int> server_fds;
 	Config config;
-	
+
     std::vector<Client> clients;
 	fd_set master;
 	fd_set reads;
@@ -44,5 +44,5 @@ public:
     void write_to_client(int socket_fd, int index);
     void check_for_timeout(Client& client, int index);
     void close_connection(int socket_fd, int index);
-
+    int should_make_socket_for_server(ServerConfig server, int i);
 };

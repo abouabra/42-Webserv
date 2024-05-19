@@ -161,6 +161,24 @@ void Config::parse_config(std::string &config_file)
 		if ((int)servers[i].max_body_size == -1)
 			servers[i].max_body_size = DEFAULT_MAX_BODY_SIZE;
 	}
+
+	for(size_t i = 0; i < servers.size(); i++)
+	{
+		for (size_t j = i + 1; j  < servers.size(); j++)
+		{
+			if (servers[i].host == servers[j].host && servers[i].port[0] == servers[j].port[0])
+			{
+				for (size_t k = 0; k < servers[i].server_names.size(); k++)
+				{
+					if(std::find(servers[j].server_names.begin(), servers[j].server_names.end(), servers[i].server_names[k]) != servers[j].server_names.end())
+					{
+						std::cout << "Server #" << j << std::endl;
+						throw(std::runtime_error("duplicated server_name"));
+					}
+				}
+			}
+		}
+	}
 }
 
 
@@ -198,7 +216,7 @@ ServerConfig parse_server_config(std::stringstream &ss)
 
 
 		// here we check if there is still data on the line
-		if (ss_2.peek() != EOF && key != "port:")
+		if (ss_2.peek() != EOF && (key != "port:" && key != "server_name:"))
 		{
 			std::cout << line << std::endl;
 			throw(std::runtime_error("Invalid syntax"));
@@ -242,6 +260,20 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			}
 		}
 
+		else if (key == "server_name:")
+		{
+			new_server.server_names.push_back(value);
+			while(ss_2.peek() != EOF && ss_2 >> value)
+			{
+				if (std::find(new_server.server_names.begin(), new_server.server_names.end(), value) != new_server.server_names.end())
+				{
+					std::cout << line << std::endl;
+					throw(std::runtime_error("duplicated server_name"));
+				}
+				new_server.server_names.push_back(value);
+			}
+		}
+
 		else if (key == "root:")
 		{
 			if (new_server.root.empty() == false)
@@ -272,7 +304,6 @@ ServerConfig parse_server_config(std::stringstream &ss)
 				std::cout << line << std::endl;
 				throw(std::runtime_error("duplicated index"));
 			}
-
 			assign_if_valid(key, value, new_server.index, is_index_valid);
 		}
 
@@ -839,6 +870,7 @@ ServerConfig& ServerConfig::ServerConfig::operator=(ServerConfig const &obj)
 		error_pages = obj.error_pages;
 		cgi = obj.cgi;
 		locations = obj.locations;
+		server_names = obj.server_names;
 	}
 	return *this;
 }
