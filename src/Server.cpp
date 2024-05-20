@@ -356,8 +356,32 @@ void Server::read_from_client(int client_fd, int index)
 		return;
 	}
 
+
+	if(this->clients[index].write_to_file == false)
+		this->clients[index].request += std::string(buffer, bytes_read);
+	else
+	{
+		write(this->clients[index].request_fd, buffer, bytes_read);
+	}
+
+
+
+	if (this->clients[index].write_to_file == false && this->clients[index].request.find("\r\n\r\n") != std::string::npos)
+	{
+		this->clients[index].write_to_file = true;
+
+		size_t pos = this->clients[index].request.find("\r\n\r\n");
+		std::string body = this->clients[index].request.substr(pos + 4);
+		this->clients[index].request =  this->clients[index].request.substr(0, pos + 4);
+
+		std::cout << "FOUND: |" << body << "|" << std::endl;
+		write(this->clients[index].request_fd, body.c_str(), body.size());
+	}
+
 	// we add the data to the request of the client
-	this->clients[index].request += std::string(buffer, bytes_read);
+	// this->clients[index].request += std::string(buffer, bytes_read);
+
+
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
@@ -434,6 +458,14 @@ void Server::write_to_client(int socket_fd, int index)
 		// this will reset the sent_size for the next request
 		this->clients[index].sent_size = 0;
 
+		this->clients[index].write_to_file = false;
+		close(this->clients[index].request_fd);
+		this->clients[index].request_fd = open(this->clients[index].request_filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+
+
+
+
+
 		// we check if the connection is close
 		// it means that the client wants to close the connection
 		if(this->clients[index].connection == "close")
@@ -487,6 +519,9 @@ void Server::close_connection(int socket_fd, int index)
 
 	// we use the close function with the socket_fd as the parameter
 	close(socket_fd);
+
+	close(this->clients[index].request_fd);
+	std::remove(this->clients[index].request_filename.c_str());
 
 	// we remove the client from the clients vector
 	this->clients.erase(this->clients.begin() + index);

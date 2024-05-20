@@ -1,7 +1,7 @@
 #pragma once
 
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 250000
 #define SELECT_TIMEOUT 10
 #define REQUEST_TIMEOUT 30
 
