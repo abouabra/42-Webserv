@@ -429,7 +429,8 @@ bool is_max_body_size_valid(std::string &max_body_size)
 		return false;
 	if (max_body_size.find_first_not_of("0123456789") != std::string::npos)
 		return false;
-	if (ft_atoi(max_body_size) < 0)
+	long size = ft_atol(max_body_size);
+	if (size < 0 || size > 500000000)
 		return false;
 	return true;
 }

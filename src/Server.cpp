@@ -27,6 +27,7 @@ Server &Server::operator=(Server const &obj) {
 		this->writes = obj.writes;
 		this->max_fd = obj.max_fd;
 		this->tv = obj.tv;
+		this->server_config_indexs = obj.server_config_indexs;
     }
     return *this;
 }
@@ -61,8 +62,10 @@ void Server::init() {
 
     // here we loop through the servers in the config
     for (size_t i=0; i < this->config.servers.size(); i++) {
-
-		if(should_make_socket_for_server(this->config.servers[i], i) != -1) {
+		int index = should_make_socket_for_server(this->config.servers[i], i);
+		if(index != -1)
+		{
+			server_config_indexs[this->server_fds[index]] = this->config.servers[index];
 			continue;
 		}
 
@@ -71,6 +74,7 @@ void Server::init() {
 		
 		// we add the socket to the list of server sockets
         this->server_fds.push_back(socket_fd);
+		server_config_indexs[socket_fd] = this->config.servers[i];
 
 		// set the socket to non-blocking
 		set_socket_to_non_blocking(socket_fd);
@@ -245,7 +249,7 @@ void Server::server_loop()
 			if (FD_ISSET(this->server_fds[i], &this->reads))
 			{
 				// we accept the incoming connection
-				accept_connection(this->server_fds[i], i);
+				accept_connection(this->server_fds[i]);
 			}
 		}
 
@@ -273,7 +277,7 @@ void Server::server_loop()
 	}
 }
 
-void Server::accept_connection(int socket_fd, int index)
+void Server::accept_connection(int socket_fd)
 {
 	// here we accept the incoming connection
 	// we need to create a sockaddr_in struct to store the client address
@@ -306,7 +310,7 @@ void Server::accept_connection(int socket_fd, int index)
 	// we create a Client object with the client_socket_fd, client address and port and the server config that the client is connected to
 	// we also set the env variable of the client to the env variable of the server
 	// and add it to the clients vector
-	Client client(client_socket_fd, ntohl(client_address.sin_addr.s_addr), ntohs(client_address.sin_port), this->config.servers[index], this->config);
+	Client client(client_socket_fd, ntohl(client_address.sin_addr.s_addr), ntohs(client_address.sin_port), server_config_indexs[socket_fd], this->config);
 	
 	// we want to pass the environment variables to the client but each client must have its own copy
 	client.env = std::vector<std::string>(this->env);
@@ -356,36 +360,55 @@ void Server::read_from_client(int client_fd, int index)
 		return;
 	}
 
-
-	if(this->clients[index].write_to_file == false)
-		this->clients[index].request += std::string(buffer, bytes_read);
-	else
-	{
-		write(this->clients[index].request_fd, buffer, bytes_read);
-	}
-
-
-
-	if (this->clients[index].write_to_file == false && this->clients[index].request.find("\r\n\r\n") != std::string::npos)
-	{
-		this->clients[index].write_to_file = true;
-
-		size_t pos = this->clients[index].request.find("\r\n\r\n");
-		std::string body = this->clients[index].request.substr(pos + 4);
-		this->clients[index].request =  this->clients[index].request.substr(0, pos + 4);
-
-		std::cout << "FOUND: |" << body << "|" << std::endl;
-		write(this->clients[index].request_fd, body.c_str(), body.size());
-	}
-
 	// we add the data to the request of the client
-	// this->clients[index].request += std::string(buffer, bytes_read);
+	this->clients[index].request += std::string(buffer, bytes_read);
 
-
+	// if(this->clients[index].request.size() > this->clients[index].config.max_body_size)
+	// {
+	// 	bytes_read = 0;
+	// }
+	std::string content_length = "";
+	std::string method = "";
+	std::string boundary = "";
+	// bool found = false;
+	// if(found == false)
+	// {
+		if(this->clients[index].request.find("\r\n\r\n") != std::string::npos)
+		{
+			method = this->clients[index].request.substr(0, this->clients[index].request.find(" "));
+			// if(method != "GET")
+				// found = true;
+			if(method == "POST")
+			{
+				if(this->clients[index].request.find("Content-Length: ") != std::string::npos)
+				{
+					int pos = this->clients[index].request.find("Content-Length: ") + 16;
+					content_length = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos);
+					std::cout << "Content-Length: " << content_length << std::endl;
+					std::cout << "max size: " << this->clients[index].config.max_body_size << std::endl;
+				}
+				if(boundary == "" && this->clients[index].request.find("boundary=") != std::string::npos)
+				{
+					int pos = this->clients[index].request.find("boundary=") + 9;
+					boundary = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos) + "--";
+				}
+				// found = true;
+			}
+		}
+	// }
+	// if(content_length != "" && ft_atol(content_length) > (int)this->clients[index].config.max_body_size)
+	// {
+	// 	std::cout << "ENTERED" << std::endl;
+	// 	FD_CLR(client_fd, &this->master);
+	// 	FD_SET(client_fd, &this->writes);
+	// 	this->clients[index].send_error_response(413);
+	// 	this->clients[index].keep_alive_timeout = std::time(NULL);
+	// 	return;
+	// }
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
-	if(bytes_read < BUFFER_SIZE)
+	if(method != "POST" || (method == "POST" && boundary == "") || (method == "POST" && this->clients[index].request.find(boundary) != std::string::npos))
 	{
 		// we process the request
 		// this function will parse and process the request then generate a response
@@ -458,14 +481,6 @@ void Server::write_to_client(int socket_fd, int index)
 		// this will reset the sent_size for the next request
 		this->clients[index].sent_size = 0;
 
-		this->clients[index].write_to_file = false;
-		close(this->clients[index].request_fd);
-		this->clients[index].request_fd = open(this->clients[index].request_filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
-
-
-
-
-
 		// we check if the connection is close
 		// it means that the client wants to close the connection
 		if(this->clients[index].connection == "close")
@@ -519,9 +534,6 @@ void Server::close_connection(int socket_fd, int index)
 
 	// we use the close function with the socket_fd as the parameter
 	close(socket_fd);
-
-	close(this->clients[index].request_fd);
-	std::remove(this->clients[index].request_filename.c_str());
 
 	// we remove the client from the clients vector
 	this->clients.erase(this->clients.begin() + index);

@@ -10,46 +10,37 @@ def parse_filename(content):
     match = re.search(filename_pattern, content, re.IGNORECASE)
     return match.group(1).strip() if match else ""
 
-def handle_upload(request_body, upload_dir):
-    boundary = os.environ.get("CONTENT_TYPE", "")
-    if boundary.find("boundary=") != -1:
-        boundary = boundary.split("boundary=")[1]
-    else:
-        boundary = None
 
-    filename = None
-    if boundary:
-        part = request_body.split(boundary.encode())
-        if len(part) < 3:
-            return "<h1>400 - Bad Request</h1><h3>Invalid request</h3>"
-        part = part[1]
+def handle_upload(request_body, upload_dir):
+    boundary = os.environ.get("CONTENT_TYPE", "").split("boundary=")[-1]
+    
+    if not boundary:
+        return "<h1>Error: Could not find boundary in Content-Type</h1>"
+
+    parts = request_body.split(boundary.encode())[1:-1]
+
+    for part in parts:
         header, data = part.split(b'\r\n\r\n', 1)
 
         filename = parse_filename(header.decode())
-    else:
-        data = request_body
-
-    if not filename:
-        filename = str(uuid.uuid4())
-    else:
+        if not filename:
+            continue
+    
         filename, file_extension = os.path.splitext(filename)
         filename = f"{filename}-{str(uuid.uuid4())}{file_extension}"
-    
-    if not os.path.exists(upload_dir):
-        os.makedirs(upload_dir)
+        file_path = os.path.join(upload_dir,filename)
 
-    file_path = os.path.join(upload_dir,filename)
-
-    try:
-        with open(file_path, "wb") as f:
-            if boundary:
+        try:
+            with open(file_path, "wb") as f:
                 data = data.split(b'\r\n--', 1)[0]
-            f.write(data)
-        return f"<h1>201 - Created</h1><h3>{filename} has been uploaded successfully!</h3><h3>Go to upload directory to see your file</h3>"
-    except Exception as e:
-        return f"<h1>Error during upload: {str(e)}</h1>"
+                f.write(data)
+            return f"<h1>201 - Created</h1><h3>{filename} has been uploaded successfully!</h3><h3>Go to upload directory to see your file</h3>"
+        except Exception as e:
+            return f"<h1>Error during upload: {str(e)}</h1>"
 
     return "<h1>No file found in upload data</h1>"
+
+
 
 def main():
     method = os.environ.get("REQUEST_METHOD", "")

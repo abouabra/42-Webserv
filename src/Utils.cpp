@@ -2,7 +2,6 @@
 #include <cstddef>
 #include <iostream>
 #include <netinet/in.h>
-#include <sstream>
 
 void log(std::string message, int color)
 {
@@ -36,7 +35,7 @@ std::string itoa(int i)
 }
 
 
-std::string read_file2(std::string name)
+std::string read_file(std::string name)
 {
 	std::fstream file(name.c_str(), std::ios::in);
 	std::string content;
@@ -56,33 +55,7 @@ std::string read_file2(std::string name)
 	return content;
 }
 
-std::string read_file(std::string filename)
-{
-  std::ifstream file(filename, std::ios::binary); // Open in binary mode
 
-  if (!file.is_open()) {
-    // Handle file opening error
-    return "";
-  }
-
-  // Get the size of the file
-  file.seekg(0, std::ios::end);
-  std::streamsize size = file.tellg();
-  file.seekg(0, std::ios::beg);
-
-  // Check for empty file
-  if (size <= 0) {
-    return "";
-  }
-
-  // Allocate memory for the entire file content
-  std::string content(size, '\0');
-
-  // Read the entire file content into the string
-  file.read(&content[0], size);
-
-  return content;
-}
 
 int count_c(std::string str, char c)
 {
@@ -99,6 +72,25 @@ int count_c(std::string str, char c)
 int ft_atoi(std::string str)
 {
 	int num = 0;
+	int sign = 1;
+	if(str[0] == '-')
+	{
+		sign = -1;
+		str.erase(0, 1);
+	}
+	for(size_t i = 0; i < str.length(); i++)
+	{
+		if(!std::isdigit(str[i]))
+			return -1;
+		num = num * 10 + (str[i] - '0');
+	}
+	return num * sign;
+}
+
+
+long ft_atol(std::string str)
+{
+	long num = 0;
 	int sign = 1;
 	if(str[0] == '-')
 	{
@@ -299,7 +291,5 @@ int resolve_host(std::string host)
 		return -1;
 
 	struct sockaddr_in *sockaddr = (struct sockaddr_in*)res->ai_addr;
-	int ip = htonl(sockaddr->sin_addr.s_addr);
-	freeaddrinfo(res);
-	return ip;
+	return htonl(sockaddr->sin_addr.s_addr);
 }

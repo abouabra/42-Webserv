@@ -20,6 +20,7 @@ public:
 	Server &operator=(Server const &obj);
 
 	std::vector<int> server_fds;
+    std::map<int, ServerConfig> server_config_indexs;
 	Config config;
 
     std::vector<Client> clients;
@@ -39,7 +40,7 @@ public:
     void bind_server_address(int socket_fd, ServerConfig server);
     void set_socket_to_listen(int socket_fd);
     void server_loop();
-    void accept_connection(int socket_fd, int index);
+    void accept_connection(int socket_fd);
     void read_from_client(int socket_fd, int index);
     void write_to_client(int socket_fd, int index);
     void check_for_timeout(Client& client, int index);

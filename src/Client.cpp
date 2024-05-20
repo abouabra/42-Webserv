@@ -20,15 +20,10 @@ Client::Client(int socket_fd, int host, int port, ServerConfig config, Config gl
     this->host = host;
     this->port = port;
     this->config = config;
+
 	this->global_config = global_config;
     this->sent_size = 0;
     this->keep_alive_timeout = std::time(NULL);
-	this->request_filename = GenerateUniqueFileName();
-	this->request_fd = open(request_filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
-	this->write_to_file = false;
-
-
-	this->status_codes[100] = "Continue";
 	this->status_codes[200] = "OK";
     this->status_codes[201] = "Created";
     this->status_codes[204] = "No Content";
@@ -107,16 +102,6 @@ Client &Client::operator=(Client const &obj)
 
         this->status_codes = obj.status_codes;
         this->mime_types = obj.mime_types;
-
-		this->global_config = obj.global_config;
-		this->request_query_string = obj.request_query_string;
-		this->transfer_encoding = obj.transfer_encoding;
-
-		this->env = obj.env;
-		this->request_filename = obj.request_filename;
-		this->request_fd = obj.request_fd;
-		this->write_to_file = obj.write_to_file;
-
     }
     return *this;
 }
@@ -243,25 +228,23 @@ void Client::parse_request()
 
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
 
-
 	// match host to server name
 	// if not found we choose the first server block
-	bool found = false;
-	for (size_t i = 0; i < this->global_config.servers.size() && !found; i++)
+	for (size_t i = 0; i < this->global_config.servers.size(); i++)
 	{
 		if(this->global_config.servers[i].host == config.host && this->global_config.servers[i].port[0] == config.port[0])
 		{
-			for (size_t j = 0; j < this->global_config.servers[i].server_names.size() && !found; j++)
+			for (size_t j = 0; j < this->global_config.servers[i].server_names.size(); j++)
 			{
 				if(this->global_config.servers[i].server_names[j] == this->request_host)
 				{
 					config = this->global_config.servers[i];
-					found = true;
-					break;
+					return;
 				}
 			}
 		}
 	}
+
 }
 
 void Client::process_request() {
@@ -944,14 +927,14 @@ void Client::process_GET_CGI(std::string &resource_path)
 void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 {
 
-	int pipe_fd[2];
+	int pipe_fd[2] = {-1, -1};
 	int status;
 	std::string filename;
 	
 	// we check if the method is POST
 	// if it is we generate a unique file name
-	// if(method == "POST")
-	// 	filename = GenerateUniqueFileName();
+	if(method == "POST")
+		filename = GenerateUniqueFileName();
 
 	// we create the pipe
 	if(pipe(pipe_fd) < 0)
@@ -987,34 +970,34 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		// and we write the request body to the write end of the pipe
 		if(method == "POST")
 		{
-			// // we create a a temporary file to write the request body
-			// // this is done bacause writing to file is waaaay faster than writing to pipe
-			// int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
-			// if(fd < 0)
-			// {
-			// 	// if the file fails to open we send a 500 response
-			// 	send_error_response(500);
-			// 	std::exit(1);
-			// }
+			// we create a a temporary file to write the request body
+			// this is done bacause writing to file is waaaay faster than writing to pipe
+			int fd = open(filename.c_str(), O_CREAT | O_WRONLY | O_TRUNC, 0666);
+			if(fd < 0)
+			{
+				// if the file fails to open we send a 500 response
+				send_error_response(500);
+				std::exit(1);
+			}
 
-			// // we write the request body to the file
-			// int bytes = write(fd, request_body.c_str(), request_body.size());
+			// we write the request body to the file
+			int bytes = write(fd, request_body.c_str(), request_body.size());
 
-			// // if the bytes written is less than 0 it means an error occurred
-			// // we send a 500 response, close the pipe and return
-			// if (bytes < 0)
-			// {
-			// 	send_error_response(500);
-			// 	close(pipe_fd[1]);
-			// 	close(fd);
-			// 	return;
-			// }
+			// if the bytes written is less than 0 it means an error occurred
+			// we send a 500 response, close the pipe and return
+			if (bytes < 0)
+			{
+				send_error_response(500);
+				close(pipe_fd[1]);
+				close(fd);
+				return;
+			}
 
-			// // we close the file
-			// close(fd);
+			// we close the file
+			close(fd);
 
 			// now we re open the file in read only mode
-			int fd = open(request_filename.c_str(), O_RDONLY);
+			fd = open(filename.c_str(), O_RDONLY);
 
 			// if the file fails to open we send a 500 response
 			if(fd < 0)

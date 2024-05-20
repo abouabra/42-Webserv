@@ -69,3 +69,5 @@ std::string GenerateUniqueFileName();
 std::string decode_URL(std::string URL);
 
 char* my_strdup(const std::string& str);
+
+long ft_atol(std::string str);
