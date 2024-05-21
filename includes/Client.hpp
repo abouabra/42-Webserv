@@ -25,8 +25,6 @@ public:
     int host;
     int port;
 
-
-
     // Request variables
     std::string request;
     std::string method;

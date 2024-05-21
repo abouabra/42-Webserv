@@ -340,6 +340,18 @@ ServerConfig parse_server_config(std::stringstream &ss)
 			throw std::runtime_error("Invalid config syntax");
 		}
 	}
+
+	for(size_t i = 0; i< new_server.locations.size(); i++)
+	{
+		for(size_t j = i + 1; j < new_server.locations.size(); j++)
+		{
+			if(new_server.locations[i].path == new_server.locations[j].path)
+			{
+				std::cout << "Location #" << j << std::endl;
+				throw(std::runtime_error("duplicated location path"));
+			}
+		}
+	}
 	return new_server;
 }
 
@@ -694,16 +706,32 @@ Location parse_server_location(std::stringstream &ss)
 
 		if (key == "root:")
 		{
+			if(location.root.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated root"));
+			}
 			assign_if_valid(key, value, location.root, is_root_valid);
 		}
 
 		else if (key == "index:")
 		{
+			if(location.index.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated index"));
+			}
 			assign_if_valid(key, value, location.index, is_index_valid);
 		}
 
 		else if (key == "methods:")
 		{
+			if(location.methods.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated methods"));
+			}
+
 			if (is_valid_method(value))
 				location.methods.push_back(value);
 			else
@@ -792,6 +820,11 @@ Location parse_server_location(std::stringstream &ss)
 			}
 
 			assign_if_valid(key, value, location.upload_dir, is_root_valid);
+		}
+		else
+		{
+			std::cout << line << std::endl;
+			throw(std::runtime_error("Invalid config syntax"));
 		}
 	}
 	return location;

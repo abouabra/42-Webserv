@@ -348,9 +348,10 @@ void Client::decode_chunked_body()
 {
 	// we do this by reading the chunked body and decoding it
 	std::string decoded_body;
+	this->request_body.clear();
 
 	std::stringstream ss(request_body);
-
+	
 	while(true)
 	{
 		// we define the chunk size
@@ -1074,7 +1075,7 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		// we define varibales
 		char buffer[4096];
 		std::memset(buffer, 0, 4096);
-		std::string line;
+		std::string cgi_content;
 		// we loop through the response from the CGI script
 		while (true)
 		{
@@ -1094,8 +1095,8 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 				return;
 			}
 
-			// we append the buffer to the line
-			line += std::string(buffer, bytes_read);
+			// we append the buffer to cgi_content
+			cgi_content += std::string(buffer, bytes_read);
 
 			// we clear the buffer
 			std::memset(buffer, 0, 4096);
@@ -1109,10 +1110,23 @@ void Client::execute_CGI(const char *path, char *argv[], char *envp[])
 		if(method == "POST")
 			std::remove(filename.c_str());
 		
-
-		// we set the raw received response from the CGI script as the response
 		this->response_status_code = 200;
-		this->response = line;
+
+		if(cgi_content.find("HTTP/1.1") == std::string::npos)
+		{
+			this->response_status_code = 500;
+			this->send_error_response(500);
+			return;
+		}
+		else if(cgi_content.find("HTTP/1.1") != std::string::npos && cgi_content.find("Content-Length:") == std::string::npos)
+		{
+			size_t pos = cgi_content.find("\r\n") + 2;
+			std::string content_L = "Content-Length: " + itoa(cgi_content.substr(cgi_content.find("\r\n\r\n") + 4).size()) + "\r\n";
+			cgi_content.insert(pos, content_L);
+			this->response = cgi_content;
+		}
+		else
+			this->response = cgi_content;
 	}
 }
 

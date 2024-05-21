@@ -373,42 +373,47 @@ void Server::read_from_client(int client_fd, int index)
 	// bool found = false;
 	// if(found == false)
 	// {
-		if(this->clients[index].request.find("\r\n\r\n") != std::string::npos)
+	
+	// if(this->clients[index].data_read_switch == true)
+	// {
+		method = this->clients[index].request.substr(0, this->clients[index].request.find(" "));
+		// if(method != "GET")
+			// found = true;
+		if(method == "POST")
 		{
-			method = this->clients[index].request.substr(0, this->clients[index].request.find(" "));
-			// if(method != "GET")
-				// found = true;
-			if(method == "POST")
+			if(this->clients[index].request.find("Content-Length: ") != std::string::npos)
 			{
-				if(this->clients[index].request.find("Content-Length: ") != std::string::npos)
-				{
-					int pos = this->clients[index].request.find("Content-Length: ") + 16;
-					content_length = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos);
-					std::cout << "Content-Length: " << content_length << std::endl;
-					std::cout << "max size: " << this->clients[index].config.max_body_size << std::endl;
-				}
-				if(boundary == "" && this->clients[index].request.find("boundary=") != std::string::npos)
-				{
-					int pos = this->clients[index].request.find("boundary=") + 9;
-					boundary = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos) + "--";
-				}
-				// found = true;
+				int pos = this->clients[index].request.find("Content-Length: ") + 16;
+				content_length = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos);
+				// std::cout << "Content-Length: " << content_length << std::endl;
+				// std::cout << "max size: " << this->clients[index].config.max_body_size << std::endl;
 			}
+			if(boundary == "" && this->clients[index].request.find("boundary=") != std::string::npos)
+			{
+				int pos = this->clients[index].request.find("boundary=") + 9;
+				boundary = this->clients[index].request.substr(pos, this->clients[index].request.find("\r\n", pos) - pos) + "--";
+			}
+			// found = true;
 		}
 	// }
-	// if(content_length != "" && ft_atol(content_length) > (int)this->clients[index].config.max_body_size)
-	// {
-	// 	std::cout << "ENTERED" << std::endl;
-	// 	FD_CLR(client_fd, &this->master);
-	// 	FD_SET(client_fd, &this->writes);
-	// 	this->clients[index].send_error_response(413);
-	// 	this->clients[index].keep_alive_timeout = std::time(NULL);
-	// 	return;
+
+	// if(this->clients[index].request.find("\r\n\r\n") != std::string::npos)
+	// 	this->clients[index].data_read_switch = false;
+
+
 	// }
+	if(content_length != "" && ft_atol(content_length) > (int)this->clients[index].config.max_body_size)
+	{
+		FD_CLR(client_fd, &this->master);
+		FD_SET(client_fd, &this->writes);
+		this->clients[index].connection = "close";
+		this->clients[index].send_error_response(413);
+		return;
+	}
 
 	// here we check if the request is complete by checking if MSG_PEEK returns less than 0
 	// if it returns less than 0, it means that there is no more data to be read
-	if(method != "POST" || (method == "POST" && boundary == "") || (method == "POST" && this->clients[index].request.find(boundary) != std::string::npos))
+	if((method != "" && method != "POST") || (method == "POST" && boundary == "") || (method == "POST" && this->clients[index].request.find(boundary) != std::string::npos))
 	{
 		// we process the request
 		// this function will parse and process the request then generate a response
@@ -512,7 +517,7 @@ void Server::check_for_timeout(Client& client, int index)
 	time_t current_time = std::time(NULL);
 
 	// we check if the difference is greater than the timeout value
-	if (current_time - client.keep_alive_timeout >= REQUEST_TIMEOUT)
+	if (current_time - client.keep_alive_timeout >= KEEP_ALIVE_TIMEOUT)
 	{
 		// we log that the connection has timed out
 		log("Connection On Socket " + itoa(client.socket_fd) + " Timed Out, Closing Connection ...", GREEN);
