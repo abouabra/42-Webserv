@@ -571,7 +571,12 @@ std::string Client::construct_resource_path(Location& location)
 	// we define the full path
 	// we do this by concatenating the root path and the uri
 	std::string full_path = root + url_path;
-
+	if (!location.alias.empty())
+	{
+		full_path = location.alias;
+		if(!uri.substr(location.path.size()).empty())
+			full_path += uri.substr(location.path.size() + 1);
+	}
 	// we return the full path
 	return full_path;
 }

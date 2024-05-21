@@ -714,6 +714,16 @@ Location parse_server_location(std::stringstream &ss)
 			assign_if_valid(key, value, location.root, is_root_valid);
 		}
 
+		else if (key == "alias:")
+		{
+			if(location.alias.empty() == false)
+			{
+				std::cout << line << std::endl;
+				throw(std::runtime_error("duplicated alias"));
+			}
+			assign_if_valid(key, value, location.alias, is_root_valid);
+		}
+
 		else if (key == "index:")
 		{
 			if(location.index.empty() == false)
@@ -938,6 +948,7 @@ Location& Location::Location::operator=(Location const &obj)
 		path = obj.path;
 		root = obj.root;
 		index = obj.index;
+		alias = obj.alias;
 		methods = obj.methods;
 		redirect_URL = obj.redirect_URL;
 		directory_listing = obj.directory_listing;

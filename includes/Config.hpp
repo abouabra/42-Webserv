@@ -12,6 +12,7 @@ class Location {
 public:
 	std::string path;
 	std::string root;
+	std::string alias;
 	std::string index;
 	std::vector<std::string> methods;
 	std::string redirect_URL;
