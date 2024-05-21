@@ -276,6 +276,7 @@ char* my_strdup(const std::string& str)
   std::strcpy(arg, str.c_str());  // Copy string content
   return arg;
 }
+
 int resolve_host(std::string host)
 {
 	if (host.empty())
@@ -283,7 +284,7 @@ int resolve_host(std::string host)
 
 	struct addrinfo hints;
 	struct addrinfo *res = NULL;
-	memset(&hints, 0, sizeof(hints));
+	std::memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 
@@ -291,5 +292,23 @@ int resolve_host(std::string host)
 		return -1;
 
 	struct sockaddr_in *sockaddr = (struct sockaddr_in*)res->ai_addr;
-	return htonl(sockaddr->sin_addr.s_addr);
+	int ip = htonl(sockaddr->sin_addr.s_addr);
+	freeaddrinfo(res);
+	return ip;
+}
+
+
+size_t hex_to_decimal(std::string number)
+{
+	size_t result = 0;
+	for (size_t i = 0; i < number.length(); i++)
+	{
+		if (std::isdigit(number[i]))
+			result = result * 16 + number[i] - '0';
+		else if (std::isupper(number[i]))
+			result = result * 16 + number[i] - 'A' + 10;
+		else if (std::islower(number[i]))
+			result = result * 16 + number[i] - 'a' + 10;
+	}
+	return result;
 }

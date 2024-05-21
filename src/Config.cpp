@@ -350,6 +350,12 @@ ServerConfig parse_server_config(std::stringstream &ss)
 				std::cout << "Location #" << j << std::endl;
 				throw(std::runtime_error("duplicated location path"));
 			}
+
+		}
+		if(new_server.locations[i].root.empty() == false && new_server.locations[i].alias.empty() == false)
+		{
+			std::cout << "Location #" << i << std::endl;
+			throw(std::runtime_error("conflicting root and alias"));
 		}
 	}
 	return new_server;

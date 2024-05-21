@@ -133,6 +133,13 @@ void Client::build_response() {
 
 void Client::handle_request()
 {
+
+	if(is_request_a_valid_http_protocol(request) == false)
+	{
+		send_error_response(400);
+		return;
+	}
+
     parse_request();
 
     // process the request and generate response
@@ -222,9 +229,6 @@ void Client::parse_request()
 	body_ss << ss.rdbuf(); // Move what's inside the stream until EOF to body_ss
 	this->request_body = body_ss.str();
 
-	// we clear the request to make sure it is empty
-	// so that if we have multiple requests in the same connection we dont have the previous request
-	this->request.clear();
 
     log("Request Received From: " + this->request_host + ", Method: " + this->method + ", URI: " + decode_URL(uri), CYAN);
 
@@ -289,10 +293,62 @@ void Client::process_request() {
 		process_DELETE(config.locations[location_idx]);
 }
 
+bool Client::is_request_a_valid_http_protocol(std::string request)
+{
+	// here we check if the request is a valid HTTP protocol
+
+	std::stringstream ss(request);
+	std::string line;
+
+	std::string status_line;
+
+	std::getline(ss, status_line);
+
+	if(count_c(status_line, ' ') != 2)
+		return false;
+
+	std::string test_method;
+	std::string test_uri;
+	std::string test_protocol;
+	
+	std::stringstream ss_status_line(status_line);
+	ss_status_line >> test_method >> test_uri >> test_protocol;
+
+	if(test_method.empty() || test_uri.empty() || test_protocol.empty())
+		return false;
+	
+	if(request.find("\r\n\r\n") == std::string::npos)
+		return false;
+	
+	while(std::getline(ss, line))
+	{
+		if (line[line.size() - 1] != '\r')
+			return false;
+		line = line.substr(0, line.size() - 1);
+		if(count_c(line, ':') < 1 && line.empty() == false)
+			return false;
+	}
+	return true;
+}
+
+
 bool Client::check_request_validity()
 {
 	// we check if transfer-Encoding header exist and is different to “chunked”
 	// if it does we send a 501 response
+	
+	if(request_host.empty() || connection.empty())
+	{
+		send_error_response(400);
+		return false;
+	}
+
+	if(protocol != "HTTP/1.1")
+	{
+		send_error_response(505);
+		return false;
+	}
+	
 	if (transfer_encoding.empty() == false && transfer_encoding != "chunked")
 	{
 		send_error_response(501);
@@ -344,29 +400,34 @@ bool Client::check_request_validity()
     return true;
 }
 
+
 void Client::decode_chunked_body()
 {
 	// we do this by reading the chunked body and decoding it
 	std::string decoded_body;
-	this->request_body.clear();
 
+	// std::cout << request_body << std::endl;
 	std::stringstream ss(request_body);
-	
+	size_t chunk_size;
+	std::string chunk_size_str;
+
 	while(true)
 	{
 		// we define the chunk size
-		size_t chunk_size;
-
-		// we read the chunk size
-		ss >> std::hex >> chunk_size;
-
+		std::getline(ss, chunk_size_str, '\n');
+		chunk_size_str.pop_back();
+		chunk_size = hex_to_decimal(chunk_size_str);
+		
+		// std::cout << "inside" << std::endl;
+		// std::cout << "Chunk size in hex: " << chunk_size_str << std::endl;
+		// std::cout << "Chunk size in decimal: " << hex_to_decimal(chunk_size_str) << std::endl;
 		// we check if the chunk size is 0
 		// if it is we break the loop
 		if(chunk_size == 0 || ss.eof())
 			break;
 		
 		// we ignore the \r\n from the chunk size
-		ss.ignore(2);
+		// ss.ignore(2);
 
 		// we read the chunk data
 		std::string chunk_data(chunk_size, '\0');
@@ -378,6 +439,10 @@ void Client::decode_chunked_body()
 		// we add the chunk data to the decoded body
 		decoded_body += chunk_data;
 	}
+	// std::cout << std::endl << std::endl << std::endl;
+	// std::cout << "***************************" << std::endl;
+	// std::cout << decoded_body << std::endl;
+	// std::cout << "***************************" << std::endl;
 
 	// we set the decoded body to the request body
 	this->request_body = decoded_body;

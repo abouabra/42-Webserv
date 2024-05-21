@@ -71,3 +71,7 @@ std::string decode_URL(std::string URL);
 char* my_strdup(const std::string& str);
 
 long ft_atol(std::string str);
+
+int resolve_host(std::string host);
+
+size_t hex_to_decimal(std::string number);

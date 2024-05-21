@@ -63,6 +63,7 @@ public:
 
     void build_response();
     bool check_request_validity();
+    bool is_request_a_valid_http_protocol(std::string request);
     void decode_chunked_body();
 
     std::string generic_error_page(int status_code);
