@@ -325,7 +325,9 @@ bool Client::is_request_a_valid_http_protocol(std::string request)
 		if (line[line.size() - 1] != '\r')
 			return false;
 		line = line.substr(0, line.size() - 1);
-		if(count_c(line, ':') < 1 && line.empty() == false)
+		if(line.empty())
+			break;
+		if(count_c(line, ':') < 1)
 			return false;
 	}
 	return true;
