@@ -346,7 +346,7 @@ void Server::read_from_client(int client_fd, int index)
 	// so we log the error then we close the connection and return -1
 	if (bytes_read < 0)
 	{
-		log("Failed to read from socket " + itoa(client_fd), RED);
+		// log("Failed to read from socket " + itoa(client_fd), RED);
 		close_connection(client_fd, index);
 		return;
 	}
@@ -463,7 +463,7 @@ void Server::write_to_client(int socket_fd, int index)
 	// so we log the error then we close the connection and return -1
 	if (bytes_sent < 0)
 	{
-		log("Failed to write to socket " + itoa(socket_fd), RED);
+		// log("Failed to write to socket " + itoa(socket_fd), RED);
 		close_connection(socket_fd, index);
 		return;
 	}
