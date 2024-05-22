@@ -1,10 +1,15 @@
 
 from hashlib import sha256
+import csv
+import time
+import sys
 
 secret_key = "my_super_secret_key_1337"
 username = "admin"
 plain_password = "admin"
 password_hash = sha256(plain_password.encode()).hexdigest()
+accounts_db_file = "../accounts_db.csv"
+session_db_file = "../session_db.csv"
 
 def home_page_body(cookie_username, theme):
     return f"""
@@ -91,6 +96,24 @@ def get_logout_body():
             </body>
         </html>
     """
+
+def check_session_timeout():
+    session_db_read = csv.reader(open(session_db_file, "r"), delimiter=",")
+
+    data = [row for row in session_db_read]
+
+    for i, row in enumerate(data):
+        if i == 0:
+            continue
+        session_time = row[3]
+        current_time = int(time.time())
+        if current_time - int(session_time) > 43200:
+            data.remove(row)
+
+    session_db_write = csv.writer(open(session_db_file, "w"), delimiter=",")
+    for row in data:
+        session_db_write.writerow(row)
+
 
 def main():
     """Send a 403 Forbidden response."""
