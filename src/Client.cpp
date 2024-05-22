@@ -417,7 +417,7 @@ void Client::decode_chunked_body()
 	{
 		// we define the chunk size
 		std::getline(ss, chunk_size_str, '\n');
-		chunk_size_str.pop_back();
+		chunk_size_str = chunk_size_str.substr(0, chunk_size_str.size() - 1);
 		chunk_size = hex_to_decimal(chunk_size_str);
 		
 		// std::cout << "inside" << std::endl;
